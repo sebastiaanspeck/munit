@@ -33,7 +33,7 @@ _pragma(classify_level=restricted, usage={subclassable})
 ##
 ## The default is a :geometric dataset called :gis which will
 ## end up in the memory::/ds/ds_gis directory.
-db_test_case.define_shared_constant(:default_create_dataset_args, {{:type, :vmsql, :name, :gis, :vmsql!recreate_database?, _true}}, :private)
+db_test_case.define_shared_constant(:default_create_dataset_args, {{:type, :geometric, :name, :gis}}, :private)
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
@@ -474,7 +474,7 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 	## details.
 	# Suppress witterage
 	_handling information _with procedure 
-	_dynamic !output!<< internal_text_output_stream.new()
+	#_dynamic !output!<< internal_text_output_stream.new()
 
 	_if _self.in_memory_db_dir?
 	_then
