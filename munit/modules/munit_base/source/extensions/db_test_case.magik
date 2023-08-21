@@ -16,6 +16,21 @@ db_test_case.define_shared_variable(:ignored_tests, {}, :private)
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
+## Can be set to :vmsql in order to create datasets in Postgres.
+db_test_case.define_shared_variable(:database_storage_mode, :vmds, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+## Can be set to :vmsql in order to create datasets in Postgres.
+db_test_case.define_shared_constant(:vmsql_additional_dataset_args, 
+	property_list.new_with(
+		:concurrency_mode, :vmsql, 
+		:vmsql!recreate_database?, _true, 
+		:partition_files, property_list.new_with(:dd, "postgres.ds", :rwo, "postgres.ds", :gdb, "postgres.ds", :raster, "postgres.ds")),
+	:private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
 ## Set this to true if you want all the CASE tool views opened
 ## up as well as the normal collection of views
 db_test_case.define_shared_variable(:open_case_views?, _false, :private)
@@ -513,7 +528,22 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 	# Build the creation arguments
 	create_props << property_list.new_with(_scatter create_database_args.default({}))
 	_if _not create_props.includes_key?(:ace_location) _then create_props[:ace_location] << ace_loc _endif
-	_if _not creators.empty? _then create_props[:dataset_creators] << creators _endif 
+	_if _not creators.empty? _then create_props[:dataset_creators] << creators _endif
+	
+	_if _self.database_storage_mode _is :vmsql
+	_then
+		# Reconfigure all the creators to use VMSQL
+		_for creator _over create_props[:dataset_creators].fast_elements()
+		_loop
+			_if creator.type _is :geometric
+			_then
+				_for additional_key, additional_value _over _self.vmsql_additional_dataset_args.fast_keys_and_elements()
+				_loop
+					creator.set_property(additional_key, additional_value)
+				_endloop
+			_endif
+		_endloop
+	_endif
 	
 	# Make the engine and run it to create the database
 	cde << create_database_engine.new(_scatter create_props)
