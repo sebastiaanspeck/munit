@@ -25,7 +25,6 @@ _pragma(classify_level=advanced, usage={subclassable})
 db_test_case.define_shared_constant(:vmsql_additional_dataset_args, 
 	property_list.new_with(
 		:concurrency_mode, :vmsql, 
-		:vmsql!recreate_database?, _true, 
 		:partition_files, property_list.new_with(:dd, "postgres.ds", :rwo, "postgres.ds", :gdb, "postgres.ds", :raster, "postgres.ds")),
 	:private)
 $
@@ -489,7 +488,7 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 	## details.
 	# Suppress witterage
 	_handling information _with procedure 
-	#_dynamic !output!<< internal_text_output_stream.new()
+	_dynamic !output!<< internal_text_output_stream.new()
 
 	_if _self.in_memory_db_dir?
 	_then
@@ -535,13 +534,15 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 		# Reconfigure all the creators to use VMSQL
 		_for creator _over create_props[:dataset_creators].fast_elements()
 		_loop
-			_if creator.type _is :geometric
-			_then
-				_for additional_key, additional_value _over _self.vmsql_additional_dataset_args.fast_keys_and_elements()
-				_loop
+			(optional_keys, mandatory_keys) << creator.property_keys(creator.type)
+			_for additional_key, additional_value _over _self.vmsql_additional_dataset_args.fast_keys_and_elements()
+			_loop
+				_if optional_keys.includes?(additional_key) _orif mandatory_keys.includes?(additional_key)
+				_then
+					write("Adding property ", additional_key,"=", additional_value," to ",creator)
 					creator.set_property(additional_key, additional_value)
-				_endloop
-			_endif
+				_endif
+			_endloop
 		_endloop
 	_endif
 	
