@@ -539,7 +539,6 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 			_loop
 				_if optional_keys.includes?(additional_key) _orif mandatory_keys.includes?(additional_key)
 				_then
-					write("Adding property ", additional_key,"=", additional_value," to ",creator)
 					creator.set_property(additional_key, additional_value)
 				_endif
 			_endloop
