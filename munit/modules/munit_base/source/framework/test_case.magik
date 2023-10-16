@@ -233,7 +233,8 @@ _private _method test_case.one_time_behaviour()
         ## test, call one_time_tear_down() on the previous test_class,
         ## then one_time_set_up() on this class.
         ##
-        _if _self.prev_test_class.is_class_of?(_self)
+        _if _self.prev_test_class.is_class_of?(_self) _andif 
+				  _self.prev_test_class.suite_name() = _self.suite_name()
         _then _return
         _endif
         
@@ -243,6 +244,19 @@ _private _method test_case.one_time_behaviour()
 
         _self.prev_test_class << _self 
         _self.prev_test_class.one_time_set_up()
+_endmethod
+$
+
+_pragma(classify_level=basic,topic=MUnit,usage=subclassable)
+_method test_case.suite_name()
+	##
+	## Return the owning suite's name.  This can be subclassed to implement
+	## different behavior, e.g. for conflict tests in PNI where the suite's name is
+	## the same for different conflict tests.
+	##
+	
+	>> _self.suite().get_name()
+	
 _endmethod
 $
 
@@ -295,20 +309,32 @@ _pragma(classify_level=basic,topic=MUnit,usage=subclassable)
 _private _method test_case.stub_map_rendering_if_required()
 	## 
 	## Turn off map view rendering to speed up the test and prevent
-	## race conditions
+	## race conditions if self.map_rendering_required? is _false.
 	##
 	
 	_if _not _self.map_rendering_required?
 	_then
-		stub_method_helper.replace_method(map_view, :|run_controlled_render()|, _proc() _endproc)
-		stub_method_helper.replace_method(map_view, :|trigger_post_render()|, _proc() _endproc)
-		stub_method_helper.replace_method(render_controller, :|enqueue()|, _proc() _endproc)
-		stub_method_helper.replace_method(map, :|draw_geometry()|, _proc() _endproc)
+		_self.stub_map_rendering()
 	_endif
 	
 _endmethod
 $
 
+_pragma(classify_level=basic,topic=MUnit,usage=subclassable)
+_method test_case.stub_map_rendering()
+	## 
+	## Turn off map view rendering to speed up the test and prevent
+	## race conditions.
+	##
+	
+	stub_method_helper.replace_method(map_view, :|run_controlled_render()|, _proc() _endproc)
+	stub_method_helper.replace_method(map_view, :|trigger_post_render()|, _proc() _endproc)
+	stub_method_helper.replace_method(render_controller, :|enqueue()|, _proc() _endproc)
+	stub_method_helper.replace_method(map, :|draw_geometry()|, _proc() _endproc)
+	stub_method_helper.replace_method(map, :|undraw_geometry()|, _proc() _endproc)
+	
+_endmethod
+$
 
 _pragma(classify_level=basic,topic=MUnit,usage=subclassable)
 _private _method test_case.stub_get_writable_dd_extension()
