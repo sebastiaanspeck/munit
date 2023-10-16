@@ -255,6 +255,32 @@ _method db_test_case.one_time_set_up()
 	_endif 
 _endmethod
 $
+_method db_test_case.set_up()
+	_super.set_up()
+	_self.ignore_tests()
+_endmethod
+$
+_private _method db_test_case.ignore_tests()
+	_if _self.ignored_tests.empty? 
+	_then
+		_return
+	_endif
+	_for ignored_test _over _self.ignored_tests.fast_elements()
+	_loop
+		_if (method << _self.method(ignored_test)) _isnt _unset
+		_then
+			owning_class << method.owner.meta_at(:exemplar_global).value
+			_local msg << write_string("Test case ", _self.class_name," is ignoring ",ignored_test, " (defined in ",owning_class.class_name,")")
+			ignore_test_proc << _proc @ignore_test()
+					_import msg
+					write(msg)
+			_endproc
+			stub_method_helper.replace_method(_self, ignored_test, ignore_test_proc)
+		_endif
+	_endloop
+_endmethod
+$
+
 _pragma(classify_level=restricted,topic=MUnit)
 _method db_test_case.run_bare()
 	## Runs the bare test sequence
