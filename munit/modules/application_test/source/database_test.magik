@@ -35,12 +35,33 @@ def_slotted_exemplar( :database_test,
 $
 
 
+_pragma(classify_level=advanced, usage={subclassable})
+## Can be set to :vmsql in order to create datasets in Postgres.
+database_test.define_shared_variable(:database_storage_mode, :vmds, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+## When this is set to false the postgres dump will be loaded in
+## one_time_set_up.  When set to true the Postgres dump will be loaded before
+## each test, i.e. from the set_up.
+database_test.define_shared_variable(:import_vmsql_before_each_test?, _false, :private)
+$
+
 _pragma(classify_level=debug)
-database_test.define_shared_variable(:database_path,
+database_test.define_shared_variable(:vmds_database_path,
         ##
         ## The location of the cambridge_db to use.
         ##
         "cbgsun11:/swdev/databases/dev_ds_500/ds/ds_admin", :public)
+$
+
+_pragma(classify_level=debug)
+database_test.define_shared_variable(:vmsql_database_path,
+        ##
+        ## The location of the cambridge_db to use for VMSQL.
+        ##
+	        "cbgsun11:/swdev/databases/dev_ds_500_vmsql/ds/ds_admin", :public)
+	
 $
 
 
@@ -79,6 +100,20 @@ _method database_test.properties
 
 	>> .properties
 	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method database_test.database_path
+	## 
+	##
+
+	>> _if _self.database_storage_mode _is :vmsql
+		_then
+			>> _self.vmsql_database_path
+		_else
+			>> _self.vmds_database_path
+		_endif
 _endmethod
 $
 
@@ -323,6 +358,7 @@ _method database_test.set_up()
 	##
         _super.set_up()
 	.properties << property_list.new()
+	_self.set_up_vmsql_db()
 	_self.given_writable_datasets( _self.writable_dataset_names )
 	_self.given_writable_dataset_clones()
 _endmethod
@@ -368,7 +404,7 @@ _private _method database_test.check_correct_database_open()
 			smallworld_product.set_startup_option(:interactive?, _false)
 		_endif
                 gis_program_manager.reinitialise()
-
+                _self.prep_vmsql_db(:gis)
                 open_database({_self.database_path})
 		_if interactive?
 		_then 
@@ -423,3 +459,110 @@ _private _method database_test.wait_for_threads_to_finish( task_owner )
 	
 _endmethod
 $
+
+_private _method database_test.set_up_vmsql_db()
+	_if _self.database_storage_mode _is :vmsql _andif 
+		_self.import_vmsql_before_each_test? _is _true
+	_then
+		_for soc _over gis_program_manager.spatial_object_controllers()
+		_loop
+			_for dsm _over soc.dataset_managers()
+			_loop
+				_if dsm.is_kind_of?(vmsql_manager_mixin) _andif dsm.dataset_open?()
+				_then
+					dsm.close()
+					_self.import_vmsql_dump(dsm.name)	
+					dsm.open(dsm.get_connect_spec())
+				_endif
+			_endloop
+		_endloop
+	_endif
+_endmethod
+$
+
+_private _method database_test.prep_vmsql_db(dataset_name)
+	##
+	## Check the VMSQL database before opening the database.  Called from
+	## one_time_set_up before we do open_database.
+	##
+	_if _self.database_storage_mode _isnt :vmsql
+	_then
+		_return
+	_endif
+
+	# Check access
+	vmsql_view << gis_ds_view.new(:readonly, :concurrency_mode, :vmsql, :name, dataset_name)
+	_protect 
+		_for file _over {"dd.ds", "rwo.ds", "gdb.ds", "raster.ds", "dd_extension.ds"}.fast_elements()
+		_loop
+			vmsql_view.add_file(file, :mode, :readonly)
+		_endloop
+		
+		# Check if demo data is loaded
+		_if vmsql_view.collections[:sw_gis!world_type] _is _unset _orif # Look for a basic collection
+			_self.import_vmsql_before_each_test? _isnt _true _orif # Will not import before each test so do it now
+			vmsql_view.collections[:pub_rest] _is _unset _orif vmsql_view.collections[:pub_rest].size = 0 _orif
+			vmsql_view.collections[:roundabout] _is _unset _orif vmsql_view.collections[:roundabout].size = 0
+		_then
+			# The database dump needs to be loaded
+			vmsql_view.discard() # Have to disconnect so the db can be recreated
+			_self.import_vmsql_dump(dataset_name)
+		_endif
+	_protection
+		vmsql_view.discard()
+	_endprotect
+_endmethod
+$
+
+
+_private _method database_test.import_vmsql_dump(dataset_name)
+	##
+	## Import a a dump file named camdb_DATASET_NAME.dump from the 
+	_self.recreate_vmsql_database(dataset_name)
+	sshuser << "tester"
+	pghost << system.getenv("SW_PGHOST")
+	pgport << system.getenv("SW_PGPORT")
+	pguser << "smallworld"
+	pgpass << "Smallworld2022"
+	pgdb << dataset_name.write_string
+	dump_file << system.canonicalise(smallworld_product.get_resource_file(write_string("camdb_", dataset_name,".dump"), :data, :vmsql_ds_src_itests))
+	private_key << system.canonicalise(smallworld_product.get_resource_file("id_rsa", :data, :vmsql_ds_src_itests))
+	_if system.os_name _is :windows 
+	_then
+		cat_cmd << "cmd /C type"
+		system.do_command(write_string("icacls ", private_key, " /inheritance:r"))
+		system.do_command(write_string("icacls ", private_key, " /grant:r ", system.getenv("username"), ":(R)"))
+	_else 
+		cat_cmd << "cat" 
+		system.do_command(write_string("chmod 600 ", private_key))
+	_endif
+	# SSH Command
+	ssh_cmd << write_string("ssh ", sshuser, "@", pghost, ' -o "StrictHostKeyChecking=no" -o "IdentitiesOnly=yes" -i ', private_key)
+	# Docker command
+	container_name << write_string("pg-", pgport)
+	docker_psql_cmd << write_string("docker exec -e PGPASSWORD=", pgpass, " -i ", container_name," psql -U ", pguser, " -d ", pgdb)
+	# Do the import
+	cmd << write_string(cat_cmd, " ", dump_file, " | ", ssh_cmd, ' "', docker_psql_cmd, ' > /dev/null"')
+	write("Importing VMSQL dump using command:")
+	write(cmd)
+	system.do_command(cmd)
+	write("Command completed successfully")
+_endmethod
+$
+
+_private _method database_test.recreate_vmsql_database(dataset_name)
+	##
+	## Recreates the VMSQL database DATASET_NAME as blank so that a dump file can
+	## be loaded.
+	##
+	a_view << database_view.new(:write, :name, dataset_name, :concurrency_mode, :vmsql)
+	_protect
+		# Just add a single file so that we have a connection and can call the recreate.
+		a_view.add_file("dd.ds", :mode, :dontcare)
+		a_view.pg_test!recreate_database()
+	_protection
+		a_view.discard()
+	_endprotect
+_endmethod
+$
+
