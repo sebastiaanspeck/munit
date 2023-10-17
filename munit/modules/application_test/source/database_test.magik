@@ -489,7 +489,7 @@ _private _method database_test.prep_vmsql_db(dataset_name)
 	_then
 		_return
 	_endif
-
+	_dynamic !output! << !terminal!
 	# Check access
 	vmsql_view << gis_ds_view.new(:readonly, :concurrency_mode, :vmsql, :name, dataset_name)
 	_protect 
