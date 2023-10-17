@@ -60,7 +60,8 @@ database_test.define_shared_variable(:vmsql_database_path,
         ##
         ## The location of the cambridge_db to use for VMSQL.
         ##
-	        "cbgsun11:/swdev/databases/dev_ds_500_vmsql/ds/ds_admin", :public)
+	       # "cbgsun11:/swdev/databases/dev_ds_500_vmsql/ds/ds_admin", :public)
+	        "C:\Smallworld\SW533\2023-10-02\cambridge_db\ds\ds_admin", :public)
 	
 $
 
@@ -542,7 +543,7 @@ _private _method database_test.import_vmsql_dump(dataset_name)
 	container_name << write_string("pg-", pgport)
 	docker_psql_cmd << write_string("docker exec -e PGPASSWORD=", pgpass, " -i ", container_name," psql -U ", pguser, " -d ", pgdb)
 	# Do the import
-	cmd << write_string(cat_cmd, " ", dump_file, " | ", ssh_cmd, ' "', docker_psql_cmd, ' > /dev/null"')
+	cmd << write_string(cat_cmd, " ", dump_file, " | ", ssh_cmd, ' "', docker_psql_cmd, '"')
 	write("Importing VMSQL dump using command:")
 	write(cmd)
 	system.do_command(cmd)
