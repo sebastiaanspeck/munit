@@ -521,8 +521,8 @@ _private _method database_test.import_vmsql_dump(dataset_name)
 	## Import a a dump file named camdb_DATASET_NAME.dump from the 
 	_self.recreate_vmsql_database(dataset_name)
 	sshuser << "tester"
-	pghost << system.getenv("SW_PGHOST")
-	pgport << system.getenv("SW_PGPORT")
+	pghost << system.getenv("sw.pghost")
+	pgport << system.getenv("sw.pgport")
 	pguser << "smallworld"
 	pgpass << "Smallworld2022"
 	pgdb << dataset_name.write_string
