@@ -60,8 +60,7 @@ database_test.define_shared_variable(:vmsql_database_path,
         ##
         ## The location of the cambridge_db to use for VMSQL.
         ##
-	       # "cbgsun11:/swdev/databases/dev_ds_500_vmsql/ds/ds_admin", :public)
-	        "C:\Smallworld\SW533\2023-10-02\cambridge_db\ds\ds_admin", :public)
+	        "cbgsun11:/swdev/databases/dev_ds_500_vmsql/ds/ds_admin", :public)
 	
 $
 
