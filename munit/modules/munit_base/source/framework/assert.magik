@@ -188,7 +188,7 @@ _private _method assert.assert_raised_condition( condition_name , an_object , me
 			       _import condition_name, tag,  actual_cond, cond_seen?, a_condition_data
 
 			       _if a_condition.taxonomy.includes?( condition_name ) _andif
-				   a_condition.data.eq?(a_condition_data.default(a_condition.data))
+				   (a_condition_data _is _unset _orif a_condition.data.eq?(a_condition_data))
 			       _then
 				       # We have the searched for condition, take note of it
 				       actual_cond    << a_condition.name
