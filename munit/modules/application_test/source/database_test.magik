@@ -518,34 +518,34 @@ $
 _private _method database_test.import_vmsql_dump(dataset_name)
 	##
 	## Import a a dump file named camdb_DATASET_NAME.dump from the 
+	##
 	_self.recreate_vmsql_database(dataset_name)
 	sshuser << "tester"
-	pghost << system.getenv("sw.pghost")
-	pgport << system.getenv("sw.pgport")
+	pgport << system.getenv("SW_PGPORT")
+	pghost << system.getenv("SW_PGHOST")
 	pguser << "smallworld"
 	pgpass << "Smallworld2022"
 	pgdb << dataset_name.write_string
 	dump_file << system.canonicalise(smallworld_product.get_resource_file(write_string("camdb_", dataset_name,".dump"), :data, :vmsql_ds_src_itests))
 	private_key << system.canonicalise(smallworld_product.get_resource_file("id_rsa", :data, :vmsql_ds_src_itests))
+	container_name << write_string("pg-", pgport)
+	shell_cmd << _unset
+	import_script_ext << _unset
 	_if system.os_name _is :windows 
 	_then
-		cat_cmd << "cmd /C type"
+		shell_cmd << "cmd /C"
+		import_script_ext << "bat"
 		system.do_command(write_string("icacls ", private_key, " /inheritance:r"))
 		system.do_command(write_string("icacls ", private_key, " /grant:r ", system.getenv("username"), ":(R)"))
 	_else 
-		cat_cmd << "cat" 
+		shell_cmd << "bash"
+		import_script_ext << "sh"
 		system.do_command(write_string("chmod 600 ", private_key))
 	_endif
-	# SSH Command
-	ssh_cmd << write_string("ssh ", sshuser, "@", pghost, ' -o "StrictHostKeyChecking=no" -o "IdentitiesOnly=yes" -i ', private_key)
-	# Docker command
-	container_name << write_string("pg-", pgport)
-	docker_psql_cmd << write_string("docker exec -e PGPASSWORD=", pgpass, " -i ", container_name," psql -U ", pguser, " -d ", pgdb)
 	# Do the import
-	cmd << write_string(cat_cmd, " ", dump_file, " | ", ssh_cmd, ' "', docker_psql_cmd, '"')
-	write("Importing VMSQL dump using command:")
-	write(cmd)
-	system.do_command(cmd)
+	import_script_name << write_string("import_postgres_dump.", import_script_ext)
+	import_script << system.canonicalise(smallworld_product.get_resource_file(import_script_name, :data, :application_test))
+	system.do_command({shell_cmd, import_script, dump_file, pghost, sshuser, private_key, container_name, pguser, pgpass, pgdb})
 	write("Command completed successfully")
 _endmethod
 $
