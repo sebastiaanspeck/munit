@@ -314,7 +314,7 @@ _endmethod
 $
 
 _pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
-_private _method db_test_case.ignore_tests()
+_private _method test_case.ignore_tests()
 	_if _self.ignored_tests.empty? 
 	_then
 		_return
