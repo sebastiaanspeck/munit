@@ -41,6 +41,14 @@ database_test.define_shared_variable(:database_storage_mode, :vmds, :private)
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
+## Controls whether the VMSQL dump is to be imported as part of the
+## one_time_set_up().  Ignored if import_vmsql_before_each_test? is true.  When
+## both import_vmsql_before_suite? and import_vmsql_before_each_test is set to
+## false then the dump will not be imported from Magik at all.
+database_test.define_shared_variable(:import_vmsql_before_suite?, _false, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
 ## When this is set to false the postgres dump will be loaded in
 ## one_time_set_up.  When set to true the Postgres dump will be loaded before
 ## each test, i.e. from the set_up.
@@ -485,7 +493,8 @@ _private _method database_test.prep_vmsql_db(dataset_name)
 	## Check the VMSQL database before opening the database.  Called from
 	## one_time_set_up before we do open_database.
 	##
-	_if _self.database_storage_mode _isnt :vmsql
+		_self.import_vmsql_before_suite? _isnt _true _orif
+		_self.import_vmsql_before_each_test _is _true
 	_then
 		_return
 	_endif
@@ -497,17 +506,8 @@ _private _method database_test.prep_vmsql_db(dataset_name)
 		_loop
 			vmsql_view.add_file(file, :mode, :readonly)
 		_endloop
-		
-		# Check if demo data is loaded
-		_if vmsql_view.collections[:sw_gis!world_type] _is _unset _orif # Look for a basic collection
-			_self.import_vmsql_before_each_test? _isnt _true _orif # Will not import before each test so do it now
-			vmsql_view.collections[:pub_rest] _is _unset _orif vmsql_view.collections[:pub_rest].size = 0 _orif
-			vmsql_view.collections[:roundabout] _is _unset _orif vmsql_view.collections[:roundabout].size = 0
-		_then
-			# The database dump needs to be loaded
-			vmsql_view.discard() # Have to disconnect so the db can be recreated
-			_self.import_vmsql_dump(dataset_name)
-		_endif
+		vmsql_view.discard() # Have to disconnect so the db can be recreated
+		_self.import_vmsql_dump(dataset_name)
 	_protection
 		vmsql_view.discard()
 	_endprotect
