@@ -543,7 +543,7 @@ _private _method database_test.import_vmsql_dump(dataset_name)
 	_then
 		condition.raise(:warning, :string, write_string("ANT executable does not exist: ", ant_exe))
 	_endif
-	system.do_command(shell_cmd, , "-f", ant_build_file, write_string("-Dsw.pghost=", pghost),
+	system.do_command(shell_cmd, "-f", ant_build_file, write_string("-Dsw.pghost=", pghost),
 		write_string("-Dpostgres.container=", container_name), write_string("-Dpostgres.database=", pgdb),
 		write_string("-Ddumpfile=camdb_", pgdb.lowercase, ".dump"), "import-vmsql-dump")
 _endmethod
