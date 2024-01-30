@@ -521,33 +521,31 @@ _private _method database_test.import_vmsql_dump(dataset_name)
 	## Import a a dump file named camdb_DATASET_NAME.dump from the 
 	##
 	_self.recreate_vmsql_database(dataset_name)
-	sshuser << "tester"
-	pgport << system.getenv("SW_PGPORT")
 	pghost << system.getenv("SW_PGHOST")
-	pguser << "smallworld"
-	pgpass << "Smallworld2022"
 	pgdb << dataset_name.write_string
-	dump_file << system.canonicalise(smallworld_product.get_resource_file(write_string("camdb_", dataset_name,".dump"), :data, :vmsql_ds_src_itests))
-	private_key << system.canonicalise(smallworld_product.get_resource_file("id_rsa", :data, :vmsql_ds_src_itests))
-	container_name << write_string("pg-", pgport)
+	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
 	shell_cmd << _unset
-	import_script_ext << _unset
 	_if system.os_name _is :windows 
 	_then
 		shell_cmd << "cmd /C"
-		import_script_ext << "bat"
-		system.do_command(write_string("icacls ", private_key, " /inheritance:r"))
-		system.do_command(write_string("icacls ", private_key, " /grant:r ", system.getenv("username"), ":(R)"))
 	_else 
 		shell_cmd << "bash"
-		import_script_ext << "sh"
-		system.do_command(write_string("chmod 600 ", private_key))
 	_endif
 	# Do the import
-	import_script_name << write_string("import_postgres_dump.", import_script_ext)
-	import_script << system.canonicalise(smallworld_product.get_resource_file(import_script_name, :data, :application_test))
-	system.do_command({shell_cmd, import_script, dump_file, pghost, sshuser, private_key, container_name, pguser, pgpass, pgdb})
-	write("Command completed successfully")
+	product_path << sw_module_manager.module(_self.module_name).product.directory
+	ant_build_file << system.pathname_down(product_path, "..", "..", "build_tools", "ant", "vmds_cloud_common.xml")
+	_if _not system.file_exists?(ant_build_file)
+	_then
+		condition.raise(:warning, :string, write_string("ANT build file does not exist: ", ant_build_file))
+	_endif
+	ant_exe << 	system.pathname_down(system.getevn("ANT_HOME"), "bin", "ant")
+	_if _not system.file_exists?(ant_exe)
+	_then
+		condition.raise(:warning, :string, write_string("ANT executable does not exist: ", ant_exe))
+	_endif
+	system.do_command(shell_cmd, , "-f", ant_build_file, write_string("-Dsw.pghost=", pghost),
+		write_string("-Dpostgres.container=", container_name), write_string("-Dpostgres.database=", pgdb),
+		write_string("-Ddumpfile=camdb_", pgdb.lowercase, ".dump"), "import-vmsql-dump")
 _endmethod
 $
 
