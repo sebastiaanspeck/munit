@@ -493,6 +493,7 @@ _private _method database_test.prep_vmsql_db(dataset_name)
 	## Check the VMSQL database before opening the database.  Called from
 	## one_time_set_up before we do open_database.
 	##
+	_if _self.database_storage_mode _isnt :vmsql _orif
 		_self.import_vmsql_before_suite? _isnt _true _orif
 		_self.import_vmsql_before_each_test _is _true
 	_then
