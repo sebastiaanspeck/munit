@@ -558,7 +558,7 @@ _private _method database_test.recreate_vmsql_database(dataset_name)
 	_protect
 		# Just add a single file so that we have a connection and can call the recreate.
 		a_view.add_file("dd.ds", :mode, :dontcare)
-		a_view.pg_test!recreate_database()
+		a_view.test!vmsql_recreate_database()
 	_protection
 		a_view.discard()
 	_endprotect
