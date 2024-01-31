@@ -538,7 +538,7 @@ _private _method database_test.import_vmsql_dump(dataset_name)
 	_then
 		condition.raise(:warning, :string, write_string("ANT build file does not exist: ", ant_build_file))
 	_endif
-	ant_exe << 	system.pathname_down(system.getevn("ANT_HOME"), "bin", "ant")
+	ant_exe << 	system.pathname_down(system.getenv("ANT_HOME"), "bin", "ant")
 	_if _not system.file_exists?(ant_exe)
 	_then
 		condition.raise(:warning, :string, write_string("ANT executable does not exist: ", ant_exe))
