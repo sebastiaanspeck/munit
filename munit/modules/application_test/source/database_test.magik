@@ -524,28 +524,32 @@ _private _method database_test.import_vmsql_dump(dataset_name)
 	pghost << system.getenv("SW_PGHOST")
 	pgdb << dataset_name.write_string
 	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
-	shell_cmd << _unset
+	cmd << rope.new()
+	ant_exe_ext << ""
 	_if system.os_name _is :windows 
 	_then
-		shell_cmd << "cmd /C"
-	_else 
-		shell_cmd << "bash"
+		ant_exe_ext << ".bat"
 	_endif
-	# Do the import
 	product_path << sw_module_manager.module(_self.module_name).product.directory
-	ant_build_file << system.pathname_down(product_path, "..", "..", "build_tools", "ant", "vmds_cloud_common.xml")
+	ant_build_file << system.canonicalise(system.pathname_down(product_path, "..", "..", "..", "build_tools", "ant", "vmds_cloud_common.xml"))
 	_if _not system.file_exists?(ant_build_file)
 	_then
 		condition.raise(:warning, :string, write_string("ANT build file does not exist: ", ant_build_file))
 	_endif
-	ant_exe << 	system.pathname_down(system.getenv("ANT_HOME"), "bin", "ant")
+	ant_exe << 	system.pathname_down(system.getenv("ANT_HOME"), "bin", write_string("ant", ant_exe_ext))
 	_if _not system.file_exists?(ant_exe)
 	_then
 		condition.raise(:warning, :string, write_string("ANT executable does not exist: ", ant_exe))
 	_endif
-	system.do_command(shell_cmd, "-f", ant_build_file, write_string("-Dsw.pghost=", pghost),
-		write_string("-Dpostgres.container=", container_name), write_string("-Dpostgres.database=", pgdb),
-		write_string("-Ddumpfile=camdb_", pgdb.lowercase, ".dump"), "import-vmsql-dump")
+	cmd.add_last(ant_exe)
+	cmd.add_last("-f")
+	cmd.add_last(ant_build_file)
+	cmd.add_last(write_string("-D", "sw.pghost=", pghost))
+	cmd.add_last(write_string("-D", "postgres.container=", container_name))
+	cmd.add_last(write_string("-D", "postgres.database=", pgdb))
+	cmd.add_last(write_string("-D", "dumpfile=", "camdb_", pgdb.lowercase, ".dump"))
+	cmd.add_last("import-vmsql-dump")
+	system.do_command(cmd.join_as_strings(" "))
 _endmethod
 $
 
