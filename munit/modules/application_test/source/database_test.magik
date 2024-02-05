@@ -507,11 +507,10 @@ _private _method database_test.prep_vmsql_db(dataset_name)
 		_loop
 			vmsql_view.add_file(file, :mode, :readonly)
 		_endloop
-		vmsql_view.discard() # Have to disconnect so the db can be recreated
-		_self.import_vmsql_dump(dataset_name)
 	_protection
 		vmsql_view.discard()
 	_endprotect
+	_self.import_vmsql_dump(dataset_name)
 _endmethod
 $
 
