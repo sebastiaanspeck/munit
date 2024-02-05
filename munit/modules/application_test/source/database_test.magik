@@ -557,13 +557,10 @@ _private _method database_test.recreate_vmsql_database(dataset_name)
 	## be loaded.
 	##
 	a_view << database_view.new(:write, :name, dataset_name, :concurrency_mode, :vmsql)
-	_protect
-		# Just add a single file so that we have a connection and can call the recreate.
-		a_view.add_file("dd.ds", :mode, :dontcare)
-		a_view.test!vmsql_recreate_database()
-	_protection
-		a_view.discard()
-	_endprotect
+	a_view.add_file("dd.ds", :mode, :dontcare)
+	# test!vmsql_recreate_database drops the current connection so we don't need to
+	# discard the view.
+	a_view.test!vmsql_recreate_database()
 _endmethod
 $
 
