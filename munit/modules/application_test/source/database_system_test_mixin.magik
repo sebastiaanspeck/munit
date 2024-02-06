@@ -34,7 +34,7 @@ _method database_system_test_mixin.given_writable_datasets( writable_dataset_nam
 	_loop
 		v << gis_program_manager.databases[ds_name]
 		v.goto_top_alternative()
-		_if _self.responds_to?(:database_storage_mode, _true) _andif _self.database_storage_mode _is :vmsql
+		_if _not v.vmds?
 		_then
 			# Faking scratchpad for VMSQL
 			# TODO:  When VMSQL supports scratchpad then remove this.
