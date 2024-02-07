@@ -81,6 +81,13 @@ _pragma(classify_level=restricted)
 test_case.define_shared_variable(:ignore_aspects?, _false, :public)
 $
 
+_pragma(classify_level=advanced, usage={subclassable})
+## Can be overridden to ignore tests in subclasses.  Should return a collection
+## of symbols, such that _self.method(a_symbol) returns the test method to ignore.
+test_case.define_shared_constant(:ignored_tests, {}, :private)
+$
+
+
 test_case.define_shared_variable(:prev_test_class,
                                 ##
                                 ## The previous test_class run, for one_time setup and
@@ -188,12 +195,21 @@ _pragma(classify_level=advanced,topic=MUnit)
 _method test_case.run_bare()
 	## Runs the bare test sequence.
 	
-        _self.one_time_behaviour()
+	_self.one_time_behaviour()
+	ignored? << _self.ignore_test(_self.get_name())
 	_protect
-		_self.set_up()
+		_if _not ignored?
+		_then
+			_self.set_up()
+		_endif
 		_self.run_test()
 	_protection
-		_self.tear_down()
+		_if _not ignored?
+		_then
+			_self.tear_down()
+		_else
+			stub_method_helper.restore_stubbed_methods()
+		_endif
 	_endprotect
 _endmethod
 $
@@ -243,7 +259,8 @@ _private _method test_case.one_time_behaviour()
         _endif
 
         _self.prev_test_class << _self 
-        _self.prev_test_class.one_time_set_up()
+	_self.prev_test_class.one_time_set_up()
+
 _endmethod
 $
 
@@ -304,6 +321,33 @@ _method test_case.int!stub_alerts()
 _endmethod
 $
 
+_pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
+_private _method test_case.ignore_test(test_name)
+	##
+	## Ignores TEST_NAME if it is configured to be ignored in self.ignored_tests. 
+	## Stubs the test_name method with one that simply outputs a message stating
+	## that the test is being ignored.  Returns true if the test was ignored, false
+	## otherwise.  TEST_NAME should be a symbol, e.g. :|test_something()|.
+	##
+	# TODO:  Tests ignored with this techique will not be picked up as ignored in
+	# the build system.  We need to get them added.
+	_if test_name _is _unset _orif _not _self.ignored_tests.includes?(test_name)
+	_then
+		_return _false
+	_endif
+	
+	# Test is not ignored
+	method << _self.method(test_name)
+	owning_class << method.owner.meta_at(:exemplar_global).value
+	_local msg << write_string("Test case ", _self.class_name," is ignoring ",test_name, " (defined in ",owning_class.class_name,")")
+	ignore_test_proc << _proc @ignore_test()
+			_import msg
+			write(msg)
+	_endproc
+	stub_method_helper.replace_method(_self, test_name, ignore_test_proc)
+	_return _true 
+_endmethod
+$
 
 _pragma(classify_level=basic,topic=MUnit,usage=subclassable)
 _private _method test_case.stub_map_rendering_if_required()

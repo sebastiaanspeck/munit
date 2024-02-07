@@ -35,12 +35,41 @@ def_slotted_exemplar( :database_test,
 $
 
 
+_pragma(classify_level=advanced, usage={subclassable})
+## Can be set to :vmsql in order to create datasets in Postgres.
+database_test.define_shared_variable(:database_storage_mode, :vmds, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+## Controls whether the VMSQL dump is to be imported as part of the
+## one_time_set_up().  Ignored if import_vmsql_before_each_test? is true.  When
+## both import_vmsql_before_suite? and import_vmsql_before_each_test is set to
+## false then the dump will not be imported from Magik at all.
+database_test.define_shared_variable(:import_vmsql_before_suite?, _false, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+## When this is set to false the postgres dump will be loaded in
+## one_time_set_up.  When set to true the Postgres dump will be loaded before
+## each test, i.e. from the set_up.
+database_test.define_shared_variable(:import_vmsql_before_each_test?, _false, :private)
+$
+
 _pragma(classify_level=debug)
-database_test.define_shared_variable(:database_path,
+database_test.define_shared_variable(:vmds_database_path,
         ##
         ## The location of the cambridge_db to use.
         ##
         "cbgsun11:/swdev/databases/dev_ds_500/ds/ds_admin", :public)
+$
+
+_pragma(classify_level=debug)
+database_test.define_shared_variable(:vmsql_database_path,
+        ##
+        ## The location of the cambridge_db to use for VMSQL.
+        ##
+	        "cbgsun11:/swdev/databases/dev_ds_500_vmsql/ds/ds_admin", :public)
+	
 $
 
 
@@ -69,6 +98,11 @@ _pragma(classify_level=debug)
 database_test.define_shared_variable( :force_close?, _true, :private )
 $
 
+_pragma(classify_level=debug)
+## Defines the list of ds files used in the Cambridge test database.
+database_test.define_shared_variable(:camdb_ds_files, {"dd.ds", "rwo.ds", "gdb.ds", "raster.ds", "dd_extension.ds"}, :private)
+$
+
 database_test.method_table.resolve_conflicts( :test_case )
 $
 
@@ -79,6 +113,20 @@ _method database_test.properties
 
 	>> .properties
 	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method database_test.database_path
+	## 
+	##
+
+	>> _if _self.database_storage_mode _is :vmsql
+		_then
+			>> _self.vmsql_database_path
+		_else
+			>> _self.vmds_database_path
+		_endif
 _endmethod
 $
 
@@ -323,6 +371,7 @@ _method database_test.set_up()
 	##
         _super.set_up()
 	.properties << property_list.new()
+	_self.set_up_vmsql_db()
 	_self.given_writable_datasets( _self.writable_dataset_names )
 	_self.given_writable_dataset_clones()
 _endmethod
@@ -350,33 +399,37 @@ _private _method database_test.check_correct_database_open()
 	
 	_self.database_opened? << _false
 	
-        _if _not ds_environment.c_is_initialised? _orif
-            gis_program_manager.ace_top_view _is _unset _orif
-            gis_program_manager.ace_top_view.searchpath.at_using_default("", 1) <> _self.database_path _orif
-            ds_environment.concurrency_mode <> _self.concurrency_mode
-        _then 
-                # Suppress witterage
-                _handling information _with procedure 
-		_dynamic !output!<< internal_text_output_stream.new()
-		
-                ds_environment.concurrency_mode << _self.concurrency_mode
-                smallworld_product.set_startup_option(:authorisation, :singleuser)
-                smallworld_product.set_startup_option(:login, "root")
+	_if _not ds_environment.c_is_initialised? _orif
+		gis_program_manager.ace_top_view _is _unset _orif
+		gis_program_manager.ace_top_view.searchpath.at_using_default("", 1) <> _self.database_path _orif
+		ds_environment.concurrency_mode <> _self.concurrency_mode
+	_then 
+		# Suppress witterage
+		_handling information _with procedure 
+		_dynamic !output!
+		_if !msf_debug?! _isnt _true
+		_then
+			!output!<< internal_text_output_stream.new()
+		_endif
+
+		ds_environment.concurrency_mode << _self.concurrency_mode
+		smallworld_product.set_startup_option(:authorisation, :singleuser)
+		smallworld_product.set_startup_option(:login, "root")
 		interactive?<< smallworld_product.get_option(:interactive?) _is _true 
 		_if interactive?
 		_then 
 			smallworld_product.set_startup_option(:interactive?, _false)
 		_endif
-                gis_program_manager.reinitialise()
-
-                open_database({_self.database_path})
+		gis_program_manager.reinitialise()
+		_self.prep_vmsql_db(:gis)
+		open_database({_self.database_path})
 		_if interactive?
 		_then 
 			smallworld_product.set_startup_option(:interactive?, _true)
 		_endif
 		_self.database_opened? << _true
-        _endif
-        _self.open_other_datasets()
+	_endif
+	_self.open_other_datasets()
 _endmethod
 $
 
@@ -423,3 +476,134 @@ _private _method database_test.wait_for_threads_to_finish( task_owner )
 	
 _endmethod
 $
+
+_private _method database_test.set_up_vmsql_db()
+	##
+	## Called from set_up() to import VMSQL db when appropriate.
+	##
+	_if _self.database_storage_mode _is :vmsql _andif 
+		_self.import_vmsql_before_each_test? _is _true
+	_then
+		_for soc _over gis_program_manager.spatial_object_controllers()
+		_loop
+			_for dsm _over soc.dataset_managers()
+			_loop
+				_if dsm.is_kind_of?(vmsql_manager_mixin) _andif dsm.dataset_open?()
+				_then
+					dsm.close()
+					_self.import_vmsql_dump(dsm.name)	
+					dsm.open(dsm.get_connect_spec())
+				_endif
+			_endloop
+		_endloop
+	_endif
+_endmethod
+$
+
+_private _method database_test.prep_vmsql_db(dataset_name)
+	##
+	## Check the VMSQL database before opening the database.  Called from
+	## one_time_set_up before we do open_database.
+	##
+	_if _self.database_storage_mode _isnt :vmsql _orif
+		_self.import_vmsql_before_suite? _isnt _true
+	_then
+		_return
+	_endif
+	_dynamic !output! << !terminal!
+	# Check access
+	vmsql_view << gis_ds_view.new(:readonly, :concurrency_mode, :vmsql, :name, dataset_name)
+	_protect 
+		_for file _over _self.camdb_ds_files.fast_elements()
+		_loop
+			vmsql_view.add_file(file, :mode, :readonly)
+		_endloop
+	_protection
+		vmsql_view.discard()
+	_endprotect
+	_self.import_vmsql_dump(dataset_name)
+_endmethod
+$
+
+
+_private _method database_test.import_vmsql_dump(dataset_name)
+	##
+	## Import a a dump file named camdb_DATASET_NAME.dump from the 
+	##
+	_self.recreate_vmsql_database(dataset_name)
+	pghost << system.getenv("SW_PGHOST")
+	pgdb << dataset_name.write_string
+	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
+	cmd << rope.new()
+	cmd.add_last(_self.ant_executable)
+	cmd.add_last("-f")
+	cmd.add_last(_self.vmsql_ant_build_xml)
+	cmd.add_last(write_string("-D", "sw.pghost=", pghost))
+	cmd.add_last(write_string("-D", "postgres.container=", container_name))
+	cmd.add_last(write_string("-D", "postgres.database=", pgdb))
+	cmd.add_last(write_string("-D", "dumpfile=", "camdb_", pgdb.lowercase, ".dump"))
+	cmd.add_last("import-vmsql-dump")
+	system.do_command(cmd.join_as_strings(" "))
+_endmethod
+$
+
+_private _method database_test.vmsql_ant_build_xml
+	##
+	## Import a a dump file named camdb_DATASET_NAME.dump from the 
+	##
+	product_path << sw_module_manager.module(_self.module_name).product.directory
+	ant_build_file << system.canonicalise(system.pathname_down(product_path, "..", "..", "..", "build_tools", "ant", "vmds_cloud_common.xml"))
+	_if _not system.file_exists?(ant_build_file)
+	_then
+		condition.raise(:warning, :string, write_string("ANT build file does not exist: ", ant_build_file))
+	_endif
+	_return ant_build_file
+_endmethod
+$
+
+_private _method database_test.ant_executable
+	##
+	## Returns the full path to the ant executable.  Depends on the ANT_HOME
+	## environment variable being set.  For Linux the ant executalbe will just be
+	## ant, for Windows it will be ant.bat.  Raises warnings when ANT_HOME is not
+	## set or when the ant executable is not found where the code expects it to be.
+	##
+	ant_home << system.getenv("ANT_HOME")
+	_if ant_home _is _unset
+	_then
+		condition.raise(:warning, :string, "ANT_HOME is not set!")
+	_endif
+		
+	ant_exe_ext << ""
+	_if system.os_name _is :windows 
+	_then
+		ant_exe_ext << ".bat"
+	_endif
+
+	ant_exe << 	system.pathname_down(ant_home, "bin", write_string("ant", ant_exe_ext))
+	_if _not system.file_exists?(ant_exe)
+	_then
+		condition.raise(:warning, :string, write_string("ANT executable does not exist: ", ant_exe))
+	_endif
+	_return ant_exe
+_endmethod
+$
+
+_private _method database_test.recreate_vmsql_database(dataset_name)
+	##
+	## Recreates the VMSQL database DATASET_NAME as blank so that a dump file can
+	## be loaded.
+	##
+	
+	_if (ds << gis_program_manager.cached_dataset(dataset_name)) _isnt _unset
+	_then
+		ds.discard()
+	_endif
+	a_view << database_view.new(:write, :name, dataset_name, :concurrency_mode, :vmsql)
+	a_view.add_file(_self.camdb_ds_files[1], :mode, :dontcare)
+	# test!vmsql_recreate_database drops the current connection so we don't need to
+	# discard the view.
+	a_view.test!vmsql_recreate_database()
+_endmethod
+$
+
