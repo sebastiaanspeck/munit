@@ -152,15 +152,15 @@ _private _method assert.compare_equals(expected , actual , _optional a_message, 
 _endmethod
 $
 
+
 _pragma(classify_level=advanced,topic=MUnit)
 _private _method assert.assert_raised_condition( condition_name , an_object , method_name ,
-						 _optional args , a_message )
+						 _optional args , a_message, a_condition_data )
 
 	## Expects that error, warning or information with
 	## CONDITION_NAME will be raised by invocation of method
 	## METHOD_NAME on AN_OBJECT.
 	##
-	## If method doesn't fail then condition
 	## ASSERTION_FAILED_WARNING is raised with the given
 	## A_MESSAGE.  If other condition is raised than it continues
 	## with handling of that condition by testing framework.
@@ -170,6 +170,9 @@ _private _method assert.assert_raised_condition( condition_name , an_object , me
 	##
 	## ARGS for method are optional and should be defined as simple
 	## vector.
+	##
+	## A_CONDITION_DATA simple vector if set add comparison with condition.data
+	
 
 	args << args.default( {} )
 
@@ -182,9 +185,10 @@ _private _method assert.assert_raised_condition( condition_name , an_object , me
 		       _handling error , warning , information _with 
 		       _proc( a_condition )
 
-			       _import condition_name, tag,  actual_cond, cond_seen?
+			       _import condition_name, tag,  actual_cond, cond_seen?, a_condition_data
 
-			       _if a_condition.taxonomy.includes?( condition_name )
+			       _if a_condition.taxonomy.includes?( condition_name ) _andif
+				   (a_condition_data _is _unset _orif a_condition.data.eq?(a_condition_data))
 			       _then
 				       # We have the searched for condition, take note of it
 				       actual_cond    << a_condition.name
@@ -222,6 +226,7 @@ _private _method assert.assert_raised_condition( condition_name , an_object , me
 	>> _scatter results.default({})
 _endmethod
 $
+
 _pragma(classify_level=advanced,topic=MUnit)
 _method assert.assert_is( expected , actual, _optional a_string)
 	## Assert that EXPECTED and ACTUAL are identical
