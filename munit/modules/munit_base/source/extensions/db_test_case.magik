@@ -533,6 +533,10 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 					creator.set_property(additional_key, additional_value)
 				_endif
 			_endloop
+			_if creator.property(:searchpath) _is _unset
+			_then
+				creator.set_property(:searchpath, write_string("/", creator.property(:name)))
+			_endif
 		_endloop
 	_endif
 	
