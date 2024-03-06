@@ -99,7 +99,9 @@ database_test.define_shared_variable( :force_close?, _true, :private )
 $
 
 _pragma(classify_level=debug)
-## Defines the list of ds files used in the Cambridge test database.
+## Defines the list of ds files used in the Cambridge test database.  This is
+## only used by VMSQL to test that we can access the database before we start
+## using it.
 database_test.define_shared_variable(:camdb_ds_files, {"dd.ds", "rwo.ds", "gdb.ds", "raster.ds", "dd_extension.ds"}, :private)
 $
 
