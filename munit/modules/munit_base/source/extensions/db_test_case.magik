@@ -250,7 +250,7 @@ _method db_test_case.run_bare()
 	# set_up(), tear_down() but this would require big refactoring
 	# (mainly in PNI tests)
 	_dynamic !msf_debug?!
-	_if _self.class_name.write_string.matches("vmsql")
+	_if _self.class_name.write_string.matches?("vmsql")
 	_then
 		!msf_debug?! << _true
 	_endif
