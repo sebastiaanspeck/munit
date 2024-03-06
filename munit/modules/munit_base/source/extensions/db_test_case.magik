@@ -557,7 +557,6 @@ _method db_test_case.open_database(_optional ace_dir, open_case_views?)
 
 	# Suppress witterage
 	_handling information _with procedure
-	_dynamic !output!<< internal_text_output_stream.new()
 	_dynamic !output!
 	_dynamic !msf_debug?!
 	_if !msf_debug?! _isnt _true
