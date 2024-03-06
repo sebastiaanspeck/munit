@@ -461,6 +461,9 @@ _private _method db_test_case.default_directories
 _endmethod
 $
 
+_global !msf_debug?! << _unset
+$
+
 _pragma(classify_level=restricted)
 _method db_test_case.create_database(_optional create_dataset_args, create_database_args)
 
@@ -470,6 +473,13 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 	# Suppress witterage
 	_handling information _with procedure 
 	_dynamic !output!<< internal_text_output_stream.new()
+	_handling information _with procedure
+	_dynamic !output!
+	_dynamic !msf_debug?!
+	_if !msf_debug?! _isnt _true
+	_then 
+		!output! << internal_text_output_stream.new()
+	_endif
 
 	_if _self.in_memory_db_dir?
 	_then
@@ -545,6 +555,12 @@ _method db_test_case.open_database(_optional ace_dir, open_case_views?)
 	# Suppress witterage
 	_handling information _with procedure
 	_dynamic !output!<< internal_text_output_stream.new()
+	_dynamic !output!
+	_dynamic !msf_debug?!
+	_if !msf_debug?! _isnt _true
+	_then 
+		!output! << internal_text_output_stream.new()
+	_endif
 	
 	# Pick up a default ACE location if we haven't been given one
 	_if (ace_loc << ace_dir) _is _unset
