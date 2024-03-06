@@ -340,9 +340,7 @@ _private _method db_test_case.go_to_alternative(a_ds_view, alternative_name)
 			_return
 		_endtry 
 	_endif
-
 	a_ds_view.go_to_alternative(alternative_name, :write)
-
 _endmethod
 $
 
@@ -470,8 +468,6 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 	## same as create_and_open_database() so see that method for
 	## details.
 	# Suppress witterage
-	_handling information _with procedure 
-	_dynamic !output!<< internal_text_output_stream.new()
 	_handling information _with procedure
 	_dynamic !output!
 	_dynamic !msf_debug?!
