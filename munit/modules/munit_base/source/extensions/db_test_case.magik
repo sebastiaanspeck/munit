@@ -251,17 +251,25 @@ _method db_test_case.run_bare()
 	# (mainly in PNI tests)
 
 	_self.stub_map_rendering_if_required()
+	_self.one_time_behaviour()
 
-        _self.one_time_behaviour()
-
-	_self.setup_db() 
-	_self.set_up()
-	
+	ignored? << _self.ignore_test(_self.get_name())
 	_protect
+		_if _not ignored?
+		_then
+			_self.setup_db() 
+			_self.set_up()
+		_endif
+	
 		_self.run_test()
 	_protection
-		_self.tear_down() 
-		_self.teardown_db()
+		_if _not ignored?
+		_then
+			_self.tear_down()
+			_self.teardown_db()
+		_else
+			stub_method_helper.restore_stubbed_methods()
+		_endif
 	_endprotect
 _endmethod
 $
