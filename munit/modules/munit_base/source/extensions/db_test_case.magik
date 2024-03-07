@@ -524,6 +524,7 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 		# Reconfigure all the creators to use VMSQL
 		_for creator _over create_props[:dataset_creators].fast_elements()
 		_loop
+			name << creator.property(:name)
 			(optional_keys, mandatory_keys) << creator.property_keys(creator.type)
 			_for additional_key, additional_value _over _self.vmsql_additional_dataset_args.fast_keys_and_elements()
 			_loop
@@ -534,8 +535,10 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 			_endloop
 			_if creator.property(:searchpath) _is _unset
 			_then
-				creator.set_property(:searchpath, write_string("/", creator.property(:name)))
+				creator.set_property(:searchpath, write_string("/", name))
 			_endif
+			# Recreate the database
+			_self.recreate_vmsql_database(name)
 		_endloop
 	_endif
 	
@@ -750,5 +753,20 @@ _private _method db_test_case.check_for_in_memory_database()
 	_then
 		condition.raise(:munit_db_not_in_memory)
 	_endif
+_endmethod
+$
+
+_private _method db_test_case.recreate_vmsql_database(database_name)
+	## Helper method which empties (recreates) a VMSQL database before opening it
+	## as part of a create_database.
+	
+	a_view << database_view.new(:write, :name, database_name, :concurrency_mode, :vmsql)
+	_protect
+		# Just add a dummy file so we can drop all schemas.
+		a_view.add_file("vmsql.ds", :mode, :dontcare)
+		a_view.test!vmsql_recreate_database()
+	_protection
+		a_view.discard()
+	_endprotect
 _endmethod
 $
