@@ -760,7 +760,7 @@ _private _method db_test_case.recreate_vmsql_database(database_name)
 	## Helper method which empties (recreates) a VMSQL database before opening it
 	## as part of a create_database.
 	
-	a_view << database_view.new(:write, :name, database_name, :concurrency_mode, :vmsql, :searchpath, {""})
+	a_view << database_view.new(:write, :searchpath, {write_string("/",database_name)}, :concurrency_mode, :vmsql)
 	_protect
 		# Just add a dummy file so we can drop all schemas.
 		a_view.add_file("vmsql.ds", :mode, :dontcare)
