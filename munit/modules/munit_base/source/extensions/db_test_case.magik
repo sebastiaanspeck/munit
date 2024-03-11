@@ -777,7 +777,7 @@ _private _method db_test_case.recreate_vmsql_database(database_name)
 		a_view.test!vmsql_recreate_database()
 	_protection
 		_lock ds_environment.views
-			ds_environment.views.remove(_self)	# forcibly
+			ds_environment.views.remove(a_view)	# forcibly
 		_endlock 
 	_endprotect
 	
