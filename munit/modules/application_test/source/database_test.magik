@@ -590,24 +590,3 @@ _private _method database_test.ant_executable
 	_return ant_exe
 _endmethod
 $
-
-_private _method database_test.recreate_vmsql_database(dataset_name)
-	##
-	## Recreates the VMSQL database DATASET_NAME as blank so that a dump file can
-	## be loaded.
-	##
-	
-	_if (ds << gis_program_manager.cached_dataset(dataset_name)) _isnt _unset
-	_then
-		ds.discard()
-	_endif
-	a_view << database_view.new(:write, :name, dataset_name, :concurrency_mode, :vmsql)
-	_protect
-		a_view.add_file(_self.camdb_ds_files[1], :mode, :dontcare)
-		a_view.test!vmsql_recreate_database()
-	_protection
-		a_view.discard()
-	_endprotect
-_endmethod
-$
-

@@ -827,3 +827,32 @@ _method test_case.stub_shared_methods()
 	
 _endmethod
 $
+
+_private _method test_case.recreate_vmsql_database(database_name)
+	## Helper method which empties (recreates) a VMSQL database before opening it
+	## as part of a create (db_test_case) or an import (datbase_test).
+	
+	ok? << _false	
+	a_view << database_view.new(:write, :searchpath, {write_string("/",database_name)}, :concurrency_mode, :vmsql)
+	_protect
+		# Just add a dummy file so we can drop all schemas.
+		a_view.add_file("vmsql.ds", :mode, :dontcare)
+		ok? << _true
+	_protection
+		_if _not ok?
+		_then # condition is being raised
+			a_view.discard()
+		_endif
+	_endprotect
+	
+	_protect
+		a_view.test!vmsql_recreate_database()
+	_protection
+		_lock ds_environment.views
+			# Cannot use discard() after recreate so we have to remove it ourselves.
+			ds_environment.views.remove(a_view)
+		_endlock 
+	_endprotect
+	
+_endmethod
+$

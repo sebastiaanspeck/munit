@@ -754,32 +754,3 @@ _private _method db_test_case.check_for_in_memory_database()
 		condition.raise(:munit_db_not_in_memory)
 	_endif
 _endmethod
-$
-
-_private _method db_test_case.recreate_vmsql_database(database_name)
-	## Helper method which empties (recreates) a VMSQL database before opening it
-	## as part of a create_database.
-	
-	ok? << _false	
-	a_view << database_view.new(:write, :searchpath, {write_string("/",database_name)}, :concurrency_mode, :vmsql)
-	_protect
-		# Just add a dummy file so we can drop all schemas.
-		a_view.add_file("vmsql.ds", :mode, :dontcare)
-		ok? << _true
-	_protection
-		_if _not ok?
-		_then
-			a_view.discard()
-		_endif
-	_endprotect
-	
-	_protect
-		a_view.test!vmsql_recreate_database()
-	_protection
-		_lock ds_environment.views
-			ds_environment.views.remove(a_view)	# forcibly
-		_endlock 
-	_endprotect
-	
-_endmethod
-$
