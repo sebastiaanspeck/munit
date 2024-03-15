@@ -98,11 +98,6 @@ _pragma(classify_level=debug)
 database_test.define_shared_variable( :force_close?, _true, :private )
 $
 
-_pragma(classify_level=debug)
-## Defines the list of ds files used in the Cambridge test database.
-database_test.define_shared_variable(:camdb_ds_files, {"dd.ds", "rwo.ds", "gdb.ds", "raster.ds", "dd_extension.ds"}, :private)
-$
-
 database_test.method_table.resolve_conflicts( :test_case )
 $
 
@@ -510,17 +505,6 @@ _private _method database_test.prep_vmsql_db(dataset_name)
 	_then
 		_return
 	_endif
-	_dynamic !output! << !terminal!
-	# Check access
-	vmsql_view << gis_ds_view.new(:readonly, :concurrency_mode, :vmsql, :name, dataset_name)
-	_protect 
-		_for file _over _self.camdb_ds_files.fast_elements()
-		_loop
-			vmsql_view.add_file(file, :mode, :readonly)
-		_endloop
-	_protection
-		vmsql_view.discard()
-	_endprotect
 	_self.import_vmsql_dump(dataset_name)
 _endmethod
 $
@@ -588,22 +572,3 @@ _private _method database_test.ant_executable
 	_return ant_exe
 _endmethod
 $
-
-_private _method database_test.recreate_vmsql_database(dataset_name)
-	##
-	## Recreates the VMSQL database DATASET_NAME as blank so that a dump file can
-	## be loaded.
-	##
-	
-	_if (ds << gis_program_manager.cached_dataset(dataset_name)) _isnt _unset
-	_then
-		ds.discard()
-	_endif
-	a_view << database_view.new(:write, :name, dataset_name, :concurrency_mode, :vmsql)
-	a_view.add_file(_self.camdb_ds_files[1], :mode, :dontcare)
-	# test!vmsql_recreate_database drops the current connection so we don't need to
-	# discard the view.
-	a_view.test!vmsql_recreate_database()
-_endmethod
-$
-
