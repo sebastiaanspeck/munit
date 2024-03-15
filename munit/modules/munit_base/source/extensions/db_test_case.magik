@@ -20,7 +20,7 @@ _pragma(classify_level=advanced, usage={subclassable})
 db_test_case.define_shared_constant(:vmsql_additional_dataset_args, 
 	property_list.new_with(
 		:concurrency_mode, :vmsql, 
-		:partition_files, property_list.new_with(:dd, "postgres.ds", :rwo, "postgres.ds", :gdb, "postgres.ds", :raster, "postgres.ds", :dd_extension, "dd_extension.ds")),
+		:partition_files, property_list.new_with(:dd, "dd.ds", :rwo, "gdb.ds", :gdb, "gdb.ds", :raster, "raster.ds", :dd_extension, "dd_extension.ds")),
 	:private)
 $
 
