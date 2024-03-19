@@ -537,7 +537,6 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 			_then
 				creator.set_property(:searchpath, write_string("/", name))
 			_endif
-			creator.p
 			# Recreate the database
 			_self.recreate_vmsql_database(name)
 		_endloop
