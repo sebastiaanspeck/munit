@@ -462,7 +462,7 @@ _private _method db_test_case.default_directories
 _endmethod
 $
 
-_global !msf_debug?! << _unset
+_global !msf_debug?! << _false
 $
 
 _pragma(classify_level=restricted)
@@ -537,6 +537,7 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 			_then
 				creator.set_property(:searchpath, write_string("/", name))
 			_endif
+			creator.p
 			# Recreate the database
 			_self.recreate_vmsql_database(name)
 		_endloop
