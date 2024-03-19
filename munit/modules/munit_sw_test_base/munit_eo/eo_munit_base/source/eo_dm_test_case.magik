@@ -639,7 +639,7 @@ _pragma(classify_level=debug, topic={Munit})
 _method eo_dm_test_case.run_bare()
 	## 
 	## 
-	_dynamic !current_application!
+	_dynamic !current_application!, !current_coordinate_system!
 
 	# Starting the application before the test runs requires the
 	# .properties slot to be set
@@ -649,6 +649,7 @@ _method eo_dm_test_case.run_bare()
 	_endif
 	
 	!current_application! << _self.int!get_current_application()
+	!current_coordinate_system! << !current_application!.coordinate_system
 
 	_super.run_bare()
 _endmethod
