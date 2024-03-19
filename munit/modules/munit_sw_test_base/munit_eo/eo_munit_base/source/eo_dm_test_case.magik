@@ -649,7 +649,13 @@ _method eo_dm_test_case.run_bare()
 	_endif
 	
 	!current_application! << _self.int!get_current_application()
-	!current_coordinate_system! << !current_application!.coordinate_system
+
+	# Few tests were using the dummy application, which does not have the
+	# coordinate system.
+	_if  !current_application!.responds_to?(:coordinate_system)
+	_then
+		!current_coordinate_system! << !current_application!.coordinate_system
+	_endif
 
 	_super.run_bare()
 _endmethod
