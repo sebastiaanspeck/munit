@@ -32,15 +32,17 @@ _pragma(classify_level=debug)
 _method eo_cim_base_case.get_name()
 	## Gets the name of a test.
 
+	name << _super.get_name()
+	
 	config_name << system.getenv("SW_GISA_DEFAULT_CONFIG_NAME")
 	
-	_if .name _isnt _unset _andif 
+	_if name _isnt _unset _andif 
 	    config_name _isnt _unset _andif
 	    config_name <> ""
 	_then
-		_return .name + " [" + config_name + "]"
+		_return name + " [" + config_name + "]"
 	_else
-		_return .name
+		_return name
 	_endif
 _endmethod
 $
