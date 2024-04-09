@@ -158,9 +158,22 @@ $
 
 _pragma(classify_level=basic,topic=MUnit)
 _method test_case.get_name()
+	##
 	## Gets the name of a test.
-
-	>> .name
+	##
+	
+	# Assumption is that GIS dataset is in all product, 
+	# so when GIS is converted to 64bit then all other datasets
+	# are converted to GIS, so .name of the test has "-64bit" suffix added.
+	_if gis_program_manager _isnt _unset _andif 
+		(a_view << gis_program_manager.databases[:gis]) _isnt _unset _andif 
+		a_view.system64? _is _true 
+	_then 
+		_return write_string(.name.default(""), "-64bit")
+	_else 
+		_return .name
+	_endif 
+	
 _endmethod
 $
 
