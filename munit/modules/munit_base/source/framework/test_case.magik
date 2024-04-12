@@ -155,6 +155,7 @@ _method test_case.get_name()
 	## Gets the name of a test.
 	##
 	
+	name << .name 
 	# Assumption is that GIS dataset is in all product, 
 	# so when GIS is converted to 64bit then all other datasets
 	# are converted to GIS, so .name of the test has "-64bit" suffix added.
@@ -162,11 +163,15 @@ _method test_case.get_name()
 		(a_view << gis_program_manager.databases[:gis]) _isnt _unset _andif 
 		a_view.system64? _is _true 
 	_then 
-		_return write_string(.name.default(""), "-64bit")
-	_else 
-		_return .name
+		name << write_string(.name.default(""), "-64bit")
+		_if .name.is_class_of?(symbol)
+		_then 
+			# .name is symbol, then new name must be symbol 
+			name << name.as_symbol()
+		_endif 
 	_endif 
 	
+	_return name 
 _endmethod
 $
 
