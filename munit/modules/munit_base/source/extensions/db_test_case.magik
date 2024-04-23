@@ -11,6 +11,25 @@ def_slotted_exemplar(:db_test_case,
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
+## Can be set to :vmsql in order to create datasets in Postgres.
+db_test_case.define_shared_variable(:database_storage_mode, :vmds, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+## Additional dataset arguments for VMSQL.
+db_test_case.define_shared_constant(:vmsql_additional_dataset_args, 
+	property_list.new_with(
+		:concurrency_mode, :vmsql, 
+		:partition_files, property_list.new_with(:dd, "dd.ds", :rwo, "gdb.ds", :gdb, "gdb.ds", :raster, "raster.ds", :dd_extension, "dd_extension.ds")),
+	:private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+## Can be set to :vmsql in order to create datasets in Postgres.
+db_test_case.define_shared_variable(:database_storage_mode, :vmds, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
 ## Set this to true if you want all the CASE tool views opened
 ## up as well as the normal collection of views
 db_test_case.define_shared_variable(:open_case_views?, _false, :private)
@@ -222,6 +241,7 @@ _method db_test_case.one_time_set_up()
 	_endif 
 _endmethod
 $
+
 _pragma(classify_level=restricted,topic=MUnit)
 _method db_test_case.run_bare()
 	## Runs the bare test sequence
@@ -229,19 +249,31 @@ _method db_test_case.run_bare()
 	# setup_db() and teardown_db() this should be called in
 	# set_up(), tear_down() but this would require big refactoring
 	# (mainly in PNI tests)
-
+	_dynamic !msf_debug?!
+	_if _self.class_name.write_string.matches?("vmsql*")
+	_then
+		!msf_debug?! << _true
+	_endif
 	_self.stub_map_rendering_if_required()
+	_self.one_time_behaviour()
 
-        _self.one_time_behaviour()
-
-	_self.setup_db() 
-	_self.set_up()
-	
+	ignored? << _self.ignore_test(_self.get_name())
 	_protect
+		_if _not ignored?
+		_then
+			_self.setup_db() 
+			_self.set_up()
+		_endif
+	
 		_self.run_test()
 	_protection
-		_self.tear_down() 
-		_self.teardown_db()
+		_if _not ignored?
+		_then
+			_self.tear_down()
+			_self.teardown_db()
+		_else
+			stub_method_helper.restore_stubbed_methods()
+		_endif
 	_endprotect
 _endmethod
 $
@@ -312,9 +344,7 @@ _private _method db_test_case.go_to_alternative(a_ds_view, alternative_name)
 			_return
 		_endtry 
 	_endif
-
 	a_ds_view.go_to_alternative(alternative_name, :write)
-
 _endmethod
 $
 
@@ -432,6 +462,9 @@ _private _method db_test_case.default_directories
 _endmethod
 $
 
+_global !msf_debug?! << _false
+$
+
 _pragma(classify_level=restricted)
 _method db_test_case.create_database(_optional create_dataset_args, create_database_args)
 
@@ -439,8 +472,13 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 	## same as create_and_open_database() so see that method for
 	## details.
 	# Suppress witterage
-	_handling information _with procedure 
-	_dynamic !output!<< internal_text_output_stream.new()
+	_handling information _with procedure
+	_dynamic !output!
+	_dynamic !msf_debug?!
+	_if !msf_debug?! _isnt _true
+	_then 
+		!output! << internal_text_output_stream.new()
+	_endif
 
 	_if _self.in_memory_db_dir?
 	_then
@@ -479,7 +517,30 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 	# Build the creation arguments
 	create_props << property_list.new_with(_scatter create_database_args.default({}))
 	_if _not create_props.includes_key?(:ace_location) _then create_props[:ace_location] << ace_loc _endif
-	_if _not creators.empty? _then create_props[:dataset_creators] << creators _endif 
+	_if _not creators.empty? _then create_props[:dataset_creators] << creators _endif
+	
+	_if _self.database_storage_mode _is :vmsql
+	_then
+		# Reconfigure all the creators to use VMSQL
+		_for creator _over create_props[:dataset_creators].fast_elements()
+		_loop
+			name << creator.property(:name)
+			(optional_keys, mandatory_keys) << creator.property_keys(creator.type)
+			_for additional_key, additional_value _over _self.vmsql_additional_dataset_args.fast_keys_and_elements()
+			_loop
+				_if optional_keys.includes?(additional_key) _orif mandatory_keys.includes?(additional_key)
+				_then
+					creator.set_property(additional_key, additional_value)
+				_endif
+			_endloop
+			_if creator.property(:searchpath) _is _unset
+			_then
+				creator.set_property(:searchpath, write_string("/", name))
+			_endif
+			# Recreate the database
+			_self.recreate_vmsql_database(name)
+		_endloop
+	_endif
 	
 	# Make the engine and run it to create the database
 	cde << create_database_engine.new(_scatter create_props)
@@ -499,7 +560,12 @@ _method db_test_case.open_database(_optional ace_dir, open_case_views?)
 
 	# Suppress witterage
 	_handling information _with procedure
-	_dynamic !output!<< internal_text_output_stream.new()
+	_dynamic !output!
+	_dynamic !msf_debug?!
+	_if !msf_debug?! _isnt _true
+	_then 
+		!output! << internal_text_output_stream.new()
+	_endif
 	
 	# Pick up a default ACE location if we haven't been given one
 	_if (ace_loc << ace_dir) _is _unset
@@ -688,4 +754,3 @@ _private _method db_test_case.check_for_in_memory_database()
 		condition.raise(:munit_db_not_in_memory)
 	_endif
 _endmethod
-$
