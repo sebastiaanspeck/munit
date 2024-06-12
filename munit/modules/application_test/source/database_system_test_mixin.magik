@@ -38,6 +38,7 @@ _method database_system_test_mixin.given_writable_datasets( writable_dataset_nam
 		_then
 			# Faking scratchpad for VMSQL
 			# TODO:  When VMSQL supports scratchpad then remove this.
+			
 			count << 1
 			alt_name << "scratchpad_"
 			_while v.has_alternative?(alt_name+count.write_string)
@@ -45,6 +46,7 @@ _method database_system_test_mixin.given_writable_datasets( writable_dataset_nam
 				count +<< 1
 			_endloop
 			alt_name << alt_name+count.write_string
+			
 			v.create_alternative(alt_name)
 			v.down(alt_name, :write)
 		_else
@@ -81,7 +83,15 @@ _private _method database_system_test_mixin.close_datasets()
 		v.rollback()
 		_if (v.alternative_path.size > 0)
 		_then
-			v.up()
+			_if _not v.vmds?
+			_then
+				# TODO:  When VMSQL supports scratchpad then remove this.			
+				alt_name << v.alternative_path.last
+				v.up()
+				v.remove_alternative(alt_name)
+			_else
+				v.up()	
+			_endif 
 		_endif
 	_endloop	
 _endmethod
