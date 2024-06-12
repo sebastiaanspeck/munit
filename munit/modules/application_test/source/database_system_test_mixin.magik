@@ -83,12 +83,14 @@ _private _method database_system_test_mixin.close_datasets()
 		v.rollback()
 		_if (v.alternative_path.size > 0)
 		_then
-			# TODO:  When VMSQL supports scratchpad then remove this.			
-			alt_name << v.alternative_path.last
-			v.up()
 			_if _not v.vmds?
 			_then
+				# TODO:  When VMSQL supports scratchpad then remove this.			
+				alt_name << v.alternative_path.last
+				v.up()
 				v.remove_alternative(alt_name)
+			_else
+				v.up()	
 			_endif 
 		_endif
 	_endloop	
