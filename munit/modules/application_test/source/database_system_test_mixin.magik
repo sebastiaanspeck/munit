@@ -83,7 +83,8 @@ _private _method database_system_test_mixin.close_datasets()
 		v.rollback()
 		_if (v.alternative_path.size > 0)
 		_then
-			alt_name << v.current_alternative_details.alternative_name.split_by(%|).last
+			# TODO:  When VMSQL supports scratchpad then remove this.			
+			alt_name << v.alternative_path.last
 			v.up()
 			_if _not v.vmds?
 			_then
