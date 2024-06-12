@@ -39,12 +39,6 @@ _method database_system_test_mixin.given_writable_datasets( writable_dataset_nam
 			# Faking scratchpad for VMSQL
 			# TODO:  When VMSQL supports scratchpad then remove this.
 			
-			#alt_name << "scratchpad_1"
-			#_if  v.has_alternative?(alt_name)
-			#_then
-			#	v.remove_alternative(alt_name)
-			#_endif
-
 			count << 1
 			alt_name << "scratchpad_"
 			_while v.has_alternative?(alt_name+count.write_string)
@@ -89,7 +83,12 @@ _private _method database_system_test_mixin.close_datasets()
 		v.rollback()
 		_if (v.alternative_path.size > 0)
 		_then
+			alt_name << v.current_alternative_details.alternative_name.split_by(%|).last
 			v.up()
+			_if _not v.vmds?
+			_then
+				v.remove_alternative(alt_name)
+			_endif 
 		_endif
 	_endloop	
 _endmethod
