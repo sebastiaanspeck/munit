@@ -1,0 +1,879 @@
+#% text_encoding = iso8859_1
+##
+_package user
+
+_pragma(classify_level=debug)
+def_slotted_exemplar(:convert_to_roman_numerals_test,
+  {
+    {:properties, _unset}
+	},
+  {:test_case})
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.set_up()
+	##
+	##
+	
+	.properties << concurrent_hash_map.new_with(:converter, convert_to_roman_numerals.new())
+	>> _super.set_up()
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_0_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(0).
+		when_converting_to_roman_numeral().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_minus_1_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number("Invalid input").
+		when_converting_to_roman_numeral().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_string_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number("test").
+		when_converting_to_roman_numeral().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_1_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(1).
+		when_converting_to_roman_numeral().
+		then_result_is("I")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_2_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(2).
+		when_converting_to_roman_numeral().
+		then_result_is("II")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_4_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(4).
+		when_converting_to_roman_numeral().
+		then_result_is("IV")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_5_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(5).
+		when_converting_to_roman_numeral().
+		then_result_is("V")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_6_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(6).
+		when_converting_to_roman_numeral().
+		then_result_is("VI")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_8_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(8).
+		when_converting_to_roman_numeral().
+		then_result_is("VIII")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_9_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(9).
+		when_converting_to_roman_numeral().
+		then_result_is("IX")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_10_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(10).
+		when_converting_to_roman_numeral().
+		then_result_is("X")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_11_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(11).
+		when_converting_to_roman_numeral().
+		then_result_is("XI")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_14_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(14).
+		when_converting_to_roman_numeral().
+		then_result_is("XIV")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_15_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(15).
+		when_converting_to_roman_numeral().
+		then_result_is("XV")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_16_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(16).
+		when_converting_to_roman_numeral().
+		then_result_is("XVI")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_19_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(19).
+		when_converting_to_roman_numeral().
+		then_result_is("XIX")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_20_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(20).
+		when_converting_to_roman_numeral().
+		then_result_is("XX")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_40_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(40).
+		when_converting_to_roman_numeral().
+		then_result_is("XL")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_45_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(45).
+		when_converting_to_roman_numeral().
+		then_result_is("XLV")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_49_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(49).
+		when_converting_to_roman_numeral().
+		then_result_is("XLIX")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_50_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(50).
+		when_converting_to_roman_numeral().
+		then_result_is("L")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_51_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(51).
+		when_converting_to_roman_numeral().
+		then_result_is("LI")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_69_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(69).
+		when_converting_to_roman_numeral().
+		then_result_is("LXIX")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_90_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(90).
+		when_converting_to_roman_numeral().
+		then_result_is("XC")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_95_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(95).
+		when_converting_to_roman_numeral().
+		then_result_is("XCV")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_99_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(99).
+		when_converting_to_roman_numeral().
+		then_result_is("XCIX")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_105_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(105).
+		when_converting_to_roman_numeral().
+		then_result_is("CV")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_164_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(164).
+		when_converting_to_roman_numeral().
+		then_result_is("CLXIV")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_400_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(400).
+		when_converting_to_roman_numeral().
+		then_result_is("CD")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_900_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(900).
+		when_converting_to_roman_numeral().
+		then_result_is("CM")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_999_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(999).
+		when_converting_to_roman_numeral().
+		then_result_is("CMXCIX")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_3999_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(3999).
+		when_converting_to_roman_numeral().
+		then_result_is("MMMCMXCIX")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_4000_to_roman_numeral()
+	##
+	##
+	
+	_self.given_a_number(4000).
+		when_converting_to_roman_numeral().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_I_to_1()
+	##
+	##
+	
+	_self.given_a_roman_numeral("I").
+		when_converting_to_integer().
+		then_result_is(1)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_II_to_2()
+	##
+	##
+	
+	_self.given_a_roman_numeral("II").
+		when_converting_to_integer().
+		then_result_is(2)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_IV_to_4()
+	##
+	##
+	
+	_self.given_a_roman_numeral("IV").
+		when_converting_to_integer().
+		then_result_is(4)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_V_to_5()
+	##
+	##
+	
+	_self.given_a_roman_numeral("V").
+		when_converting_to_integer().
+		then_result_is(5)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_VI_to_6()
+	##
+	##
+	
+	_self.given_a_roman_numeral("VI").
+		when_converting_to_integer().
+		then_result_is(6)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_VIII_to_8()
+	##
+	##
+	
+	_self.given_a_roman_numeral("VIII").
+		when_converting_to_integer().
+		then_result_is(8)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_IX_to_9()
+	##
+	##
+	
+	_self.given_a_roman_numeral("IX").
+		when_converting_to_integer().
+		then_result_is(9)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_X_to_10()
+	##
+	##
+	
+	_self.given_a_roman_numeral("X").
+		when_converting_to_integer().
+		then_result_is(10)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XI_to_11()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XI").
+		when_converting_to_integer().
+		then_result_is(11)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XIV_to_14()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XIV").
+		when_converting_to_integer().
+		then_result_is(14)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XV_to_15()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XV").
+		when_converting_to_integer().
+		then_result_is(15)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XVI_to_16()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XVI").
+		when_converting_to_integer().
+		then_result_is(16)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XIX_to_19()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XIX").
+		when_converting_to_integer().
+		then_result_is(19)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XX_to_20()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XX").
+		when_converting_to_integer().
+		then_result_is(20)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XL_to_40()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XL").
+		when_converting_to_integer().
+		then_result_is(40)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XLV_to_45()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XLV").
+		when_converting_to_integer().
+		then_result_is(45)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XLIX_to_49()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XLIX").
+		when_converting_to_integer().
+		then_result_is(49)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_L_to_50()
+	##
+	##
+	
+	_self.given_a_roman_numeral("L").
+		when_converting_to_integer().
+		then_result_is(50)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_LI_to_51()
+	##
+	##
+	
+	_self.given_a_roman_numeral("LI").
+		when_converting_to_integer().
+		then_result_is(51)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_LXIX_to_69()
+	##
+	##
+	
+	_self.given_a_roman_numeral("LXIX").
+		when_converting_to_integer().
+		then_result_is(69)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XC_to_90()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XC").
+		when_converting_to_integer().
+		then_result_is(90)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XCV_to_95()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XCV").
+		when_converting_to_integer().
+		then_result_is(95)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_XCIX_to_99()
+	##
+	##
+	
+	_self.given_a_roman_numeral("XCIX").
+		when_converting_to_integer().
+		then_result_is(99)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_CV_to_105()
+	##
+	##
+	
+	_self.given_a_roman_numeral("CV").
+		when_converting_to_integer().
+		then_result_is(105)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_CLXIV_to_164()
+	##
+	##
+	
+	_self.given_a_roman_numeral("CLXIV").
+		when_converting_to_integer().
+		then_result_is(164)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_CD_to_400()
+	##
+	##
+	
+	_self.given_a_roman_numeral("CD").
+		when_converting_to_integer().
+		then_result_is(400)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_CM_to_900()
+	##
+	##
+	
+	_self.given_a_roman_numeral("CM").
+		when_converting_to_integer().
+		then_result_is(900)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_CMXCIX_to_999()
+	##
+	##
+	
+	_self.given_a_roman_numeral("CMXCIX").
+		when_converting_to_integer().
+		then_result_is(999)
+	
+_endmethod
+$
+
+
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_MMMCMXCIX_to_3999()
+	##
+	##
+	
+	_self.given_a_roman_numeral("MMMCMXCIX").
+		when_converting_to_integer().
+		then_result_is(3999)
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_invalid_character_to_integer()
+
+	_self.given_a_roman_numeral("XZ").
+		when_converting_to_integer().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_invalid_sequence_to_integer()
+
+	_self.given_a_roman_numeral("IIX").
+		when_converting_to_integer().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_IC_to_integer()
+	##
+	##
+	
+	_self.given_a_roman_numeral("IC").
+		when_converting_to_integer().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_MMMM_to_integer()
+	##
+	##
+	
+	_self.given_a_roman_numeral("MMMM").
+		when_converting_to_integer().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_roman_numeral_IIII_to_integer()
+	##
+	##
+	
+	_self.given_a_roman_numeral("IIII").
+		when_converting_to_integer().
+		then_result_is("Invalid input")
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.given_a_number(number)
+	##
+	##
+	
+	.properties[:number] << number
+	>> _self 
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.given_a_roman_numeral(roman_numeral)
+	##
+	##
+	
+	.properties[:roman_numeral] << roman_numeral
+	>> _self
+
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.when_converting_to_roman_numeral()
+	##
+	##
+	
+	.properties[:result] << .properties[:converter].convert_to_roman_numerals(.properties[:number])
+	>> _self 
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.when_converting_to_integer()
+	##
+	##
+	
+	.properties[:result] << .properties[:converter].convert_to_integer(.properties[:roman_numeral])
+	>> _self 
+	
+_endmethod
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.then_result_is(expected)
+	##
+	##
+	
+	fail_str << write_string("Expected the result to be ", expected, ", but it is ", .properties[:result])
+	_self.assert_equals(expected, .properties[:result], fail_str)
+	>> _self 
+	
+_endmethod
+$
