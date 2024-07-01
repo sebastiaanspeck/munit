@@ -190,10 +190,22 @@ _private _method database_test.make_dataset_clones()
 			!error!<< !terminal!<< !output!<< internal_text_output_stream.new()
 			
 			_if (v<< _self.dataset(ds_name)) _is _unset _then _continue _endif
-			_self.clones[ds_name]<< simple_vector.new(_self.dataset_clones)			
+			_self.clones[ds_name]<< simple_vector.new(_self.dataset_clones)
+			cont<<0
 			_for i, a_world _over worlds.fast_keys_and_elements()
 			_loop
-				_self.clones[ds_name][i]<< clone<< gis_ds_view.new(:write, :searchpath, v.searchpath)
+				cont+<<1
+				_if v.vmds?
+				_then
+					_self.clones[ds_name][i]<< clone<< gis_ds_view.new(:write, :searchpath, v.searchpath)
+				_else
+					dataset_name << ds_name+:|_|+cont.write_string.as_symbol()
+					_self.clones[ds_name][i]<< clone<< gis_ds_view.new(:write,
+											   :concurrency_mode, :vmsql,
+											   :name, dataset_name)
+					_self.import_vmsql_dump(dataset_name,"camb_gis.dump")
+				_endif
+
 				_for f _over v.files.fast_elements()
 				_loop
 					clone.add_file(f.name, :world, a_world )
@@ -209,7 +221,7 @@ $
 _pragma(classify_level=restricted,topic=unit_testing)
 _private _method database_test.given_writable_dataset_clones()
 	## 
-	## 
+	##
 	_if _not _self.writable_dataset_clones?	_then _return _endif
 	# Create a scratchpad for each dataset clone to hold any changes
 	_for ds_name _over _self.writable_dataset_names.fast_elements()
@@ -218,11 +230,22 @@ _private _method database_test.given_writable_dataset_clones()
 		_for i,clone _over clones.fast_keys_and_elements()
 		_loop
 			clone.goto_top_alternative(:readonly)
-			clone.create_scratchpad( write_string("memory::ds",i) )
+			_if clone.vmds?
+			_then
+				clone.create_scratchpad( write_string("memory::ds",i) )
+			_else
+				_if clone.has_alternative?(i.write_string)
+				_then
+					clone.remove_alternative(i.write_string)
+				_endif
+				clone.spawn(i.write_string)
+				clone.down(i.write_string,:write)
+			_endif
 		_endloop
 	_endloop	
 _endmethod
 $
+
 _pragma(classify_level=restricted,topic=unit_testing)
 _private _method database_test.close_dataset_clones()
 	## 
@@ -509,14 +532,15 @@ _private _method database_test.prep_vmsql_db(dataset_name)
 _endmethod
 $
 
-
-_private _method database_test.import_vmsql_dump(dataset_name)
+_private _method database_test.import_vmsql_dump(dataset_name,_optional dump_name)
 	##
 	## Import a a dump file named camdb_DATASET_NAME.dump from the 
 	##
+
 	_self.recreate_vmsql_database(dataset_name)
 	pghost << system.getenv("SW_PGHOST")
 	pgdb << dataset_name.write_string
+	dump_name << dump_name.default(write_string("camdb_", pgdb.lowercase, ".dump"))
 	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
 	cmd << rope.new()
 	cmd.add_last(_self.ant_executable)
@@ -525,7 +549,7 @@ _private _method database_test.import_vmsql_dump(dataset_name)
 	cmd.add_last(write_string("-D", "sw.pghost=", pghost))
 	cmd.add_last(write_string("-D", "postgres.container=", container_name))
 	cmd.add_last(write_string("-D", "postgres.database=", pgdb))
-	cmd.add_last(write_string("-D", "dumpfile=", "camdb_", pgdb.lowercase, ".dump"))
+	cmd.add_last(write_string("-D", "dumpfile=",dump_name))
 	cmd.add_last("import-vmsql-dump")
 	system.do_command(cmd.join_as_strings(" "))
 _endmethod
