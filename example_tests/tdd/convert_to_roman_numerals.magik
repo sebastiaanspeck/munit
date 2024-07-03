@@ -127,7 +127,8 @@ _method convert_to_roman_numerals.check_valid_input(number)
 	result << ""
 	
 	# Check if number is a number
-	_if number.as_number() <> number
+	_if number.as_number() <> number _orif 
+		number.rounded <> number
 	_then 
 		result << "Invalid input"
 	_else 
