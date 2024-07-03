@@ -90,7 +90,12 @@ _method convert_to_roman_numerals_test.when_converting_to_roman_numeral()
 	##
 	##
 	
-	.properties[:result] << .properties[:converter].convert_to_roman_numerals(.properties[:number])
+	_try _with error_variable
+		.properties[:result] << .properties[:converter].convert_to_roman_numerals(.properties[:number])
+	_when user_error
+		.properties[:result] << error_variable
+	_endtry 
+
 	>> _self 
 	
 _endmethod
@@ -101,8 +106,15 @@ _method convert_to_roman_numerals_test.then_result_is(expected)
 	##
 	##
 	
-	fail_str << write_string("Expected the result to be ", expected, ", but it is ", .properties[:result])
-	_self.assert_equals(expected, .properties[:result], fail_str)
+	result << .properties[:result]
+	_if result.class_name _is :condition
+	_then 
+		result << result.data[2]
+	_endif 
+	
+	fail_str << write_string("Expected the result to be ", expected, ", but it is ", result)
+	_self.assert_equals(expected, result, fail_str)
+
 	>> _self 
 	
 _endmethod

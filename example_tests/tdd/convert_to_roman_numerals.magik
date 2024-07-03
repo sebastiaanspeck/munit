@@ -50,13 +50,9 @@ _method convert_to_roman_numerals.convert_to_roman_numerals(number)
   ## 
 	## 
 	
-	result << _self.check_valid_input(number)
-	_if result <> "Invalid input"
-	_then 
-		result << _self.do_convert_to_roman_numerals(number)
-	_endif
+	_self.check_valid_input(number)
 	
-	>> result
+	>> _self.do_convert_to_roman_numerals(number)
 	
 _endmethod
 $
@@ -124,26 +120,22 @@ _method convert_to_roman_numerals.check_valid_input(number)
 	## 
 	## 
 	
-	result << ""
-	
 	# Check if number is a number
 	_if number.as_number() <> number _orif 
 		number.rounded <> number
 	_then 
-		result << "Invalid input"
+		condition.raise(:user_error, :string, "Invalid input")
 	_else 
 		_if number <= 0
 		_then
-			result << "Invalid input"
+			condition.raise(:user_error, :string, "Invalid input")
 		_endif
 		
 		_if number > 3999
 		_then
-			result << "Invalid input"
+			condition.raise(:user_error, :string, "Invalid input")
 		_endif
 	_endif 
-	
-	>> result
 	
 _endmethod
 $
