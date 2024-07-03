@@ -1,0 +1,141 @@
+#% text_encoding = iso8859_1
+##
+_package user
+
+_pragma(classify_level=debug)
+def_slotted_exemplar(:convert_to_roman_numerals,
+  {
+  })
+$
+
+_pragma(classify_level=debug)
+convert_to_roman_numerals.define_shared_constant(:roman_numerals, 
+	concurrent_hash_map.new_with(
+		1, "I",
+		5, "V", 
+		10, "X",
+		50, "L",
+		100, "C",
+		500, "D",
+		1000, "M"),
+	:private)
+$
+
+_pragma(classify_level=debug)
+convert_to_roman_numerals.define_shared_constant(:roman_numerals_order, {1, 5, 10, 50, 100, 500, 1000}, :private)
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals.new()
+  ##
+  ##
+  
+	>> _clone.init()
+	
+_endmethod
+$
+
+_pragma(classify_level=debug,)
+_method convert_to_roman_numerals.init()
+  ## 
+  ## 
+  
+	>> _self
+	
+_endmethod
+$
+
+_pragma(classify_level=debug,)
+_method convert_to_roman_numerals.convert_to_roman_numerals(number)
+  ## 
+	## 
+	
+	_self.check_valid_input(number)
+	
+	>> _self.do_convert_to_roman_numerals(number)
+	
+_endmethod
+$
+
+# My code, plus ideas from copilot
+_pragma(classify_level=debug,)
+_method convert_to_roman_numerals.do_convert_to_roman_numerals(number)
+  ## 
+	## 
+	
+	result << ""
+	
+	_for index _over _self.roman_numerals_order.size.downto(1)
+	_loop
+		
+		roman_numeral << _self.roman_numerals_order[index]
+		_if index > 1
+		_then 
+			subtract << 1
+			_if index.odd? 
+			_then 
+				subtract << 2
+			_endif 
+			
+			prev_roman_numeral << _self.roman_numerals_order[index - subtract]
+			_if number < roman_numeral _andif 
+				number >= roman_numeral - prev_roman_numeral
+			_then 			
+				# Correctly handle subtractive notation
+				result +<< _self.roman_numerals[prev_roman_numeral] + _self.roman_numerals[roman_numeral]
+				number << number - (roman_numeral - prev_roman_numeral)
+				_continue
+			_endif 
+		_endif 
+		
+		(res, mod) << number.div_mod(roman_numeral)
+		
+		_if res > 0
+		_then
+			_for count _over range(1, res)
+			_loop
+				result +<< _self.roman_numerals[roman_numeral]
+			_endloop 
+			number << number - res * roman_numeral
+			
+			# Need recursion here
+			result << result + _self.do_convert_to_roman_numerals(number)
+			_leave
+		_endif
+		
+		_if number <= 0
+		_then 
+			_leave
+		_endif
+		
+  _endloop 
+	
+	>> result
+	
+_endmethod
+$
+
+_pragma(classify_level=debug,)
+_method convert_to_roman_numerals.check_valid_input(number)
+	## 
+	## 
+	
+	# Check if number is a number
+	_if number.as_number() <> number _orif 
+		number.rounded <> number
+	_then 
+		condition.raise(:user_error, :string, "Invalid input")
+	_else 
+		_if number <= 0
+		_then
+			condition.raise(:user_error, :string, "Invalid input")
+		_endif
+		
+		_if number > 3999
+		_then
+			condition.raise(:user_error, :string, "Invalid input")
+		_endif
+	_endif 
+	
+_endmethod
+$
