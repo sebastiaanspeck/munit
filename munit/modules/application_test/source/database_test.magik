@@ -202,6 +202,7 @@ _private _method database_test.make_dataset_clones()
 					dataset_name << ds_name+:|_|+cont.write_string.as_symbol()
 					_self.clones[ds_name][i]<< clone<< gis_ds_view.new(:write,
 											   :concurrency_mode, :vmsql,
+											   :searchpath, v.searchpath,
 											   :name, dataset_name)
 					_self.import_vmsql_dump(dataset_name,"camb_gis.dump")
 				_endif
