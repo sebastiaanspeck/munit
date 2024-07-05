@@ -182,7 +182,7 @@ _private _method database_test.make_dataset_clones()
 	_endloop
 	_for ds_name _over _self.writable_dataset_names.fast_elements()
 	_loop
-		write("JV Clonning ",_self.dataset_clones," times database: ",ds_name)
+		write("Clonning ",_self.dataset_clones," times database: ",ds_name)
 		_block
 			# Suppress witterage when creating clone
 			_handling information _with procedure 
