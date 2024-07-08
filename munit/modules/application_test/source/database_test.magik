@@ -182,7 +182,7 @@ _private _method database_test.make_dataset_clones()
 	_endloop
 	_for ds_name _over _self.writable_dataset_names.fast_elements()
 	_loop
-		write("Clonning ",_self.dataset_clones," times database: ",ds_name)
+		write("JV Clonning ",_self.dataset_clones," times database: ",ds_name)
 		_block
 			# Suppress witterage when creating clone
 			_handling information _with procedure 
@@ -595,5 +595,22 @@ _private _method database_test.ant_executable
 		condition.raise(:warning, :string, write_string("ANT executable does not exist: ", ant_exe))
 	_endif
 	_return ant_exe
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_private _method vmsql_view_consistency_test.alt_name()
+	## 
+	##
+	pross_id << system.process_id.write_string
+	cl_name << _self.class_name.write_string
+	alt_name << cl_name+pross_id
+	# to avoid having alternative names with size >32
+	_for i _over range(cl_name.size,1,-1)
+	_loop
+		_if alt_name.size<=32 _then _leave _endif 
+		alt_name << cl_name.slice(1,i)+pross_id
+	_endloop
+	>> alt_name
 _endmethod
 $
