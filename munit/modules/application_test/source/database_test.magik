@@ -98,6 +98,13 @@ _pragma(classify_level=debug)
 database_test.define_shared_variable( :force_close?, _true, :private )
 $
 
+_pragma(classify_level=debug)
+## Cambridge_db dump file name
+database_test.define_shared_constant( :dump_file_name, "camb_gis.dump", :private )
+$
+
+
+
 database_test.method_table.resolve_conflicts( :test_case )
 $
 
@@ -204,7 +211,7 @@ _private _method database_test.make_dataset_clones()
 											   :concurrency_mode, :vmsql,
 											   :searchpath, v.searchpath,
 											   :name, dataset_name)
-					_self.import_vmsql_dump(dataset_name,"camb_gis.dump")
+					_self.import_vmsql_dump(dataset_name,_self.dump_file_name)
 				_endif
 
 				_for f _over v.files.fast_elements()
@@ -235,12 +242,13 @@ _private _method database_test.given_writable_dataset_clones()
 			_then
 				clone.create_scratchpad( write_string("memory::ds",i) )
 			_else
-				_if clone.has_alternative?(i.write_string)
-				_then
-					clone.remove_alternative(i.write_string)
-				_endif
-				clone.spawn(i.write_string)
-				clone.down(i.write_string,:write)
+				count << 1
+				_while clone.has_alternative?(count.write_string)
+				_loop
+					count +<<1
+				_endloop
+				clone.spawn(count.write_string)
+				clone.down(count.write_string,:write)
 			_endif
 		_endloop
 	_endloop	
@@ -540,8 +548,8 @@ _private _method database_test.import_vmsql_dump(dataset_name,_optional dump_nam
 
 	_self.recreate_vmsql_database(dataset_name)
 	pghost << system.getenv("SW_PGHOST")
-	pgdb << dataset_name.write_string
-	dump_name << dump_name.default(write_string("camdb_", pgdb.lowercase, ".dump"))
+	pgdb << dataset_name.write_string	
+	dump_name << dump_name.default(_self.dump_file_name)
 	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
 	cmd << rope.new()
 	cmd.add_last(_self.ant_executable)
