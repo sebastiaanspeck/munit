@@ -551,6 +551,7 @@ _private _method database_test.import_vmsql_dump(dataset_name,_optional dump_nam
 	pghost << system.getenv("SW_PGHOST")
 	pgdb << dataset_name.write_string	
 	dump_name << dump_name.default(_self.dump_file_name)
+	write("XX IMPORT VMSQL DUMP ",dataset_name, tab_char,dump_name)
 	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
 	cmd << rope.new()
 	cmd.add_last(_self.ant_executable)
@@ -561,6 +562,9 @@ _private _method database_test.import_vmsql_dump(dataset_name,_optional dump_nam
 	cmd.add_last(write_string("-D", "postgres.database=", pgdb))
 	cmd.add_last(write_string("-D", "dumpfile=",dump_name))
 	cmd.add_last("import-vmsql-dump")
+
+	write("XXXX")
+	print(cmd)
 	system.do_command(cmd.join_as_strings(" "))
 _endmethod
 $
