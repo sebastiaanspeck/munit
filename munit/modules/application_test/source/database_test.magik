@@ -100,7 +100,7 @@ $
 
 _pragma(classify_level=debug)
 ## Cambridge_db dump file name
-database_test.define_shared_constant( :dump_file_name, "camb_gis.dump", :private )
+database_test.define_shared_constant( :dump_file_name, "camdb_gis.dump", :private )
 $
 
 
@@ -434,10 +434,10 @@ _private _method database_test.check_correct_database_open()
 		# Suppress witterage
 		_handling information _with procedure 
 		_dynamic !output!
-		#_if !msf_debug?! _isnt _true
-		#_then
-		#	!output!<< internal_text_output_stream.new()
-		#_endif
+		_if !msf_debug?! _isnt _true
+		_then
+			!output!<< internal_text_output_stream.new()
+		_endif
 
 		ds_environment.concurrency_mode << _self.concurrency_mode
 		smallworld_product.set_startup_option(:authorisation, :singleuser)
@@ -546,12 +546,10 @@ _private _method database_test.import_vmsql_dump(dataset_name,_optional dump_nam
 	## Import a a dump file named camdb_DATASET_NAME.dump from the 
 	##
 
-	write("XX IMPORT VMSQL DUMP ",dataset_name, tab_char,dump_name)
 	_self.recreate_vmsql_database(dataset_name)
 	pghost << system.getenv("SW_PGHOST")
 	pgdb << dataset_name.write_string	
 	dump_name << dump_name.default(_self.dump_file_name)
-	write("XX IMPORT VMSQL DUMP ",dataset_name, tab_char,dump_name)
 	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
 	cmd << rope.new()
 	cmd.add_last(_self.ant_executable)
@@ -562,9 +560,6 @@ _private _method database_test.import_vmsql_dump(dataset_name,_optional dump_nam
 	cmd.add_last(write_string("-D", "postgres.database=", pgdb))
 	cmd.add_last(write_string("-D", "dumpfile=",dump_name))
 	cmd.add_last("import-vmsql-dump")
-
-	write("XXXX")
-	print(cmd)
 	system.do_command(cmd.join_as_strings(" "))
 _endmethod
 $
