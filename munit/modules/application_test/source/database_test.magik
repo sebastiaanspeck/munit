@@ -546,6 +546,7 @@ _private _method database_test.import_vmsql_dump(dataset_name,_optional dump_nam
 	## Import a a dump file named camdb_DATASET_NAME.dump from the 
 	##
 
+	write("XX IMPORT VMSQL DUMP ",dataset_name, tab_char,dump_name)
 	_self.recreate_vmsql_database(dataset_name)
 	pghost << system.getenv("SW_PGHOST")
 	pgdb << dataset_name.write_string	
