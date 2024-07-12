@@ -1,0 +1,375 @@
+#% text_encoding = iso8859_1
+_package sw
+
+_pragma(classify_level=debug)
+##
+## This mixin implements the set up and tear down of vmsql database_tests.
+##
+## Subclass expected to implement replaced_dataset_managers which should a property_list.
+##
+def_mixin(:vmsql_database_test_mixin)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+vmsql_database_test_mixin.define_shared_variable(:database_storage_mode, 
+	##
+	## Can be set to :vmsql in order to create datasets in Postgres.
+	##
+	:vmds, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+vmsql_database_test_mixin.define_shared_variable(:import_vmsql_before_suite?, 
+	## Controls whether the VMSQL dump is to be imported as part of the
+	## one_time_set_up().  Ignored if import_vmsql_before_each_test? is true.  When
+	## both import_vmsql_before_suite? and import_vmsql_before_each_test is set to
+	## false then the dump will not be imported from Magik at all.
+	_true, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+vmsql_database_test_mixin.define_shared_variable(:import_vmsql_before_each_test?, 
+	## When this is set to false the postgres dump will be loaded in
+	## one_time_set_up.  When set to true the Postgres dump will be loaded before
+	## each test, i.e. from the set_up.
+	_false, :private)
+$
+
+_pragma(classify_level=debug)
+vmsql_database_test_mixin.define_shared_variable(:vmsql_datasets,
+	##
+	## The location of the cambridge_db to use for VMSQL.
+	##
+	{:gis}, :private)
+$
+
+vmsql_database_test_mixin.define_shared_variable(:vmsql_debug_mode?,
+	##
+	## When set to false the output from importing vmsql dumps will not be output.
+	##
+	_true, :private)
+$
+
+_private _method vmsql_database_test_mixin.prep_vmsql_db()
+	##
+	## Check the VMSQL database before opening the database.  Called from
+	## check_correct_database_open() before we do open_database.
+	##
+	_if _self.database_storage_mode _isnt :vmsql _orif
+		_self.import_vmsql_before_suite? _isnt _true
+	_then
+		_return
+	_endif
+	
+	_for dataset_name _over _self.vmsql_datasets.fast_elements()
+	_loop
+		_self.import_vmsql_dump(dataset_name)
+	_endloop
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.one_time_set_up_vmsql()
+	##
+	## Gets called from one_time_set_up() to do one-time setup for VMSQL suites.
+	## If the session has a local database open, i.e. hosted on the current
+	## machine, then datasets specified in vmsql_datasets will be replaced with
+	## equivalent vmsql datasets.  Changes are undone by one_time_tear_down_vmsql().
+	## 
+	_if _self.database_storage_mode _isnt :vmsql
+	_then
+		_return
+	_endif
+
+	_for dataset_name _over _self.vmsql_datasets.fast_elements()
+	_loop
+		_if (dsm << _self.dataset_manager(dataset_name)) _isnt _unset 
+		_then
+			vmsql_dsm << _unset
+			_if _not dsm.is_kind_of?(vmsql_manager_mixin) _andif
+				_self.is_vmds_database_local? # Dev mode - replace
+			_then
+				vmsql_dsm << _self.replace_vmds_dataset_with_vmsql(dsm)
+				_self.import_vmsql_dump(vmsql_dsm.name)
+				vmsql_dsm.open(vmsql_dsm.get_connect_spec())
+			# _elif dsm.is_kind_of?(vmsql_manager_mixin) _andif
+			# 	_self.import_vmsql_before_suite? _is _true _andif
+			# 	_self.import_vmsql_before_each_test? _isnt _true
+			# _then
+			# 	write("Closing ",dsm)
+			# 	dsm.close()
+			# 	vmsql_dsm << dsm
+			_endif
+			# _if vmsql_dsm _isnt _unset
+			# _then
+			# 	_self.import_vmsql_dump(vmsql_dsm.name)
+			# 	write("Reopening ",vmsql_dsm)
+			# 	vmsql_dsm.open(vmsql_dsm.get_connect_spec())
+			# _endif
+		_endif
+	_endloop
+_endmethod
+$
+
+_method vmsql_database_test_mixin.one_time_tear_down_vmsql()
+	##
+	## Called by one_time_tear_down().  If vmds datases were replaced with vmsql
+	## then they are restored.
+	##
+	write("IN one_time_tear_down_vmsql")
+	_if _self.database_storage_mode _isnt :vmsql
+	_then
+		_return
+	_endif
+	_for name, vmds_dsm _over _self.replaced_dataset_managers.fast_keys_and_elements()
+	_loop
+		vmsql_dsm << vmds_dsm.parent_soc.dataset_managers[name]
+		_if (vmsql_dsm.dataset_open?())
+		_then
+			vmsql_dsm.close()
+		_endif
+	_endloop
+	gis_program_manager.ace_top_view.go_to_checkpoint(_self.ace_before_checkpoint_name, :write)
+	gis_program_manager.ace_top_view.remove_checkpoint(_self.ace_before_checkpoint_name)
+	gis_program_manager.ace_top_view.switch(:readonly)
+	_for name, vmds_dsm _over _self.replaced_dataset_managers.keys_and_elements()
+	_loop
+		vmds_dsm.parent_soc.dataset_managers[name] << vmds_dsm
+		vmds_dsm.open(vmds_dsm.get_connect_spec())
+		_self.replaced_dataset_managers.remove_key(name)
+	_endloop
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.set_up_vmsql()
+	##
+	## Called from set_up() to import VMSQL db when appropriate.
+	##
+	_if _self.database_storage_mode _is :vmsql _andif
+		_self.import_vmsql_before_each_test? _is _true
+	_then
+		_for dataset_name _over _self.vmsql_datasets.fast_elements()
+		_loop
+			_if (dsm << _self.dataset_manager(dataset_name)) _isnt _unset _andif 
+				dsm.is_kind_of?(vmsql_manager_mixin)
+			_then
+				_if dsm.dataset_open?()
+				_then
+					dsm.close()
+				_endif
+				_self.import_vmsql_dump(dsm.name)
+				dsm.open(dsm.get_connect_spec())
+			_endif
+		_endloop
+	_endif
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.ace_before_checkpoint_name
+	##
+	## Returns a name for the checkpoint created in the ACE Top.
+	##
+	_return write_string(_self.class_name, "_before")
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.vmsql_dump_file_name(dataset_name)
+	##
+	## Returns the dump file name for the specified dataset.
+	##
+	_return write_string("camdb_", dataset_name.write_string.lowercase, ".dump")
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.import_vmsql_dump(dataset_name, _optional dump_file)
+	##
+	## Imports the dump into postgres for the specified dataset.  If the Postgres
+	## commandline utility psql is available on this machine then that is used,
+	## otherwise we use an ant target.
+	##
+	file << dump_file.default(_self.vmsql_dump_file_name(dataset_name))
+	_if _self.vmsql_psql_available?
+	_then
+		_try _with cond
+			_self.import_vmsql_dump_via_psql(dataset_name, file)
+			_return
+		_when error
+			# Try remote
+			write("Local import failed: ", cond.report_contents_string)
+		_endtry
+	_endif
+	_self.import_vmsql_dump_via_ant(dataset_name, file)
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.is_vmds_database_local?
+	##
+	## Returns true if the database that we have open is hosted on the same machine
+	## as where our session is running.  This is used by VMSQL set-ups to enable
+	## developer mode and replace vmds datasets with vmsql when running
+	## database_tests locally.
+	##
+	_if (ace_top << gis_program_manager.ace_top_view) _isnt _unset
+	_then
+		_return system.file_exists?(ace_top.searchpath.at_using_default("", 1))
+	_endif 
+	_return _false
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.vmsql_psql_available?
+	##
+	## Checks whether the Postgres psql commandline utility is available
+	##
+	available? << _false
+	_block
+		_handling error _with procedure
+		(status, exit_code) << system.do_command("psql --version")
+		_if status _is :exited _andif exit_code = 0
+		_then
+			available? << _true
+		_endif
+	_endblock		
+	_return available?
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.import_vmsql_dump_via_psql(dataset_name, dump_file)
+	##
+	## Uses the Postgres psql commandline utility to import the database dump file
+	## for the specified dataset.  Intended to support developers in running
+	## database_tests locally on their Windows machines.
+	##
+	_self.recreate_vmsql_database(dataset_name)
+	cmd << "cmd /c psql"
+	host << system.getenv("SW_PGHOST")
+	_if host _isnt _unset
+	_then
+		cmd << write_string(cmd, " -h ", host)
+	_endif
+	port << system.getenv("SW_PGPORT")
+	_if port _isnt _unset
+	_then
+		cmd << write_string(cmd, " -p ", port)
+	_endif
+	_if (user << system.getenv("SW_PGUSERNAME")) _is _unset
+	_then
+		user << "smallworld"
+		write("Please use env var SW_PGUSERNAME to specify Postgres username.  Using default (smallworld).")
+	_endif
+	_if (pwd << system.getenv("SW_PGPASSWORD")) _is _unset 
+	_then
+		pwd << "Smallworld2022"
+		write("Please use env var SW_PGPASSWORD to specify Postgres password.  Using default.")
+	_endif
+	file_path << _self.vmsql_database_dump_file(dump_file)
+	cmd << write_string(cmd, " -U ", user, " -d ", dataset_name.write_string, " -f ", file_path)
+	write("Importing dump using:")
+	write(cmd)
+	_if _self.vmsql_debug_mode? _isnt _true
+	_then
+		cmd << write_string(cmd, " > nul 2>$1")
+	_endif		
+	system.putenv("PGPASSWORD", pwd)
+	(status, exit_code) << system.do_command(cmd)
+	_if status _isnt :exited _orif exit_code ~= 0
+	_then
+		condition.raise(:error, :string, write_string("PSQL returned status ", status, " and exit code ", exit_code))
+	_endif
+_endmethod 
+
+_private _method vmsql_database_test_mixin.import_vmsql_dump_via_ant(dataset_name, dump_file)
+	##
+	## Imports a a dump file named camdb_DATASET_NAME.dump using the
+	## import-vmsql-dump ant target.
+	##
+	_self.recreate_vmsql_database(dataset_name)
+	pghost << system.getenv("SW_PGHOST")
+	pgdb << dataset_name.write_string
+	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
+	container_name << "pg-test"
+	cmd << rope.new()
+	cmd.add_last(_self.ant_executable)
+	cmd.add_last("-f")
+	cmd.add_last(_self.vmsql_ant_build_xml)
+	cmd.add_last("-Dssh.user=develop")
+	cmd.add_last("-Dssh.passwd=TES0103")
+	cmd.add_last(write_string("-D", "sw.pghost=", pghost))
+	cmd.add_last(write_string("-D", "postgres.container=", container_name))
+	cmd.add_last(write_string("-D", "postgres.database=", pgdb))
+	cmd.add_last(write_string("-D", "dumpfile=", dump_file))
+	_if _self.vmsql_debug_mode? _is _true
+	_then
+		cmd.add_last("-Ddebug=debug")
+	_endif
+	cmd.add_last("import-vmsql-dump")
+	write("Importing dump using:")
+	write(cmd.join_as_strings(" "))
+	system.do_command(cmd.join_as_strings(" "))
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.vmsql_ant_build_xml
+	##
+	## Import a a dump file named camdb_DATASET_NAME.dump from the 
+	##
+	product_path << sw_module_manager.module(_self.module_name).product.directory
+	ant_build_file << system.canonicalise(system.pathname_down(product_path, "..", "..", "..", "build_tools", "ant", "vmds_cloud_common.xml"))
+	_if _not system.file_exists?(ant_build_file)
+	_then
+		condition.raise(:warning, :string, write_string("ANT build file does not exist: ", ant_build_file))
+	_endif
+	_return ant_build_file
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.vmsql_database_dump_file(dump_file)
+	##
+	## Works out the local path and filename for a camdb dump for the specified
+	## dataset.
+	##
+	munit_prod_path << smallworld_product.product(:munit).directory
+	file << system.pathname_down(munit_prod_path, "..", "..", "vmsql-database-dumps", "database_dumps", dump_file)
+	_if _not system.file_exists?(file)
+	_then
+		condition.raise(:error, :string, write_string("Dump file does not exist: ", file))
+	_endif
+	_return file
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.dataset_manager(name)
+	_for soc _over gis_program_manager.spatial_object_controllers()
+	_loop
+		_if (dsm << soc.dataset_manager(name)) _isnt _unset
+		_then
+			_return dsm
+		_endif
+	_endloop
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.replace_vmds_dataset_with_vmsql(dataset_manager)
+	parent_soc << dataset_manager.parent_soc
+	write("Replacing ", dataset_manager.class_name, " dataset ", dataset_manager.name, " with VMSQL")
+	ace_top << gis_program_manager.ace_top_view
+	_if _not ace_top.has_checkpoint?(_self.ace_before_checkpoint_name)
+	_then
+		ace_top.checkpoint(_self.ace_before_checkpoint_name)
+	_endif
+	dataset_manager.close()
+	dataset_pred << predicate.eq(:session, parent_soc.name.write_string) _and predicate.eq(:partition, dataset_manager.name.write_string)
+	dataset_rec << ace_top.collections[:sw_gis!dataset].select(dataset_pred).an_element()
+	ace_top.switch(:write)
+	dataset_rec.delete()
+	dataset_manager.remove_connect_spec()
+	vmsql_dsm << vmsql_manager.new(dataset_manager.name)
+	vmsql_dsm.parent_soc << parent_soc
+	vmsql_dsm.store_connect_spec(vmsql_manager.default_connect_specification)
+	gis_program_manager.add_dataset(parent_soc.name, dataset_manager.name, :vmsql_manager)
+	parent_soc.dataset_managers[dataset_manager.name] << vmsql_dsm
+	_self.replaced_dataset_managers[dataset_manager.name] << dataset_manager
+	ace_top.commit()
+	ace_top.switch(:readonly)
+	_return vmsql_dsm
+_endmethod
+$
