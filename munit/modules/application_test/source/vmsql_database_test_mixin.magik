@@ -286,21 +286,14 @@ _private _method vmsql_database_test_mixin.import_vmsql_dump_via_ant(dataset_nam
 	pghost << system.getenv("SW_PGHOST")
 	pgdb << dataset_name.write_string
 	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
-	container_name << "pg-test"
 	cmd << rope.new()
 	cmd.add_last(_self.ant_executable)
 	cmd.add_last("-f")
 	cmd.add_last(_self.vmsql_ant_build_xml)
-	cmd.add_last("-Dssh.user=develop")
-	cmd.add_last("-Dssh.passwd=TES0103")
 	cmd.add_last(write_string("-D", "sw.pghost=", pghost))
 	cmd.add_last(write_string("-D", "postgres.container=", container_name))
 	cmd.add_last(write_string("-D", "postgres.database=", pgdb))
 	cmd.add_last(write_string("-D", "dumpfile=", dump_file))
-	_if _self.vmsql_debug_mode? _is _true
-	_then
-		cmd.add_last("-Ddebug=debug")
-	_endif
 	cmd.add_last("import-vmsql-dump")
 	write("Importing dump using:")
 	write(cmd.join_as_strings(" "))
