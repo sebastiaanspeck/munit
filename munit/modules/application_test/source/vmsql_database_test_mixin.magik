@@ -181,7 +181,7 @@ _private _method vmsql_database_test_mixin.import_vmsql_dataset(dataset_manager)
 		_then
 			write(_self.class_name, " closing ",dsm)
 		_endif
-		dsm.close()
+		dataset_manager.close()
 	_endif
 	_self.import_vmsql_dump(dataset_manager.name)
 	_if !msf_debug?! _is _true
