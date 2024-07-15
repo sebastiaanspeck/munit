@@ -196,7 +196,13 @@ _private _method vmsql_database_test_mixin.ace_before_checkpoint_name
 	##
 	## Returns a name for the checkpoint created in the ACE Top.
 	##
-	_return write_string(_self.class_name, "_before")
+	postfix << "_bef"
+	name << write_string(_self.class_name, postfix)
+	_if name.size > 32
+	_then
+		name << write_string(_self.class_name.write_string.subseq(1, 32-postfix.size), postfix)
+	_endif
+	_return name
 _endmethod
 $
 
