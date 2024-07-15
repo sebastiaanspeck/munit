@@ -372,7 +372,7 @@ _method database_test.one_time_tear_down()
         ## Subclass implemetations should always call _super.
 	##
 	_super.one_time_tear_down()
-	_self.one_time_tear_down_vmsql()	
+	_self.one_time_tear_down_vmsql()
 	_if _self.database_opened? _orif
 	    _self.force_close?
 	_then 
@@ -431,7 +431,7 @@ _private _method database_test.check_correct_database_open()
 		# Suppress witterage
 		_handling information _with procedure 
 		_dynamic !output!
-		_if !msf_debug?! _isnt _true _andif _self.vmsql_debug_mode? _isnt _true
+		_if !msf_debug?! _isnt _true
 		_then
 			!output!<< internal_text_output_stream.new()
 		_endif
