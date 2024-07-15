@@ -43,13 +43,6 @@ vmsql_database_test_mixin.define_shared_variable(:vmsql_datasets,
 	{:gis}, :private)
 $
 
-vmsql_database_test_mixin.define_shared_variable(:vmsql_debug_mode?,
-	##
-	## When set to false the output from importing vmsql dumps will not be output.
-	##
-	_true, :private)
-$
-
 _private _method vmsql_database_test_mixin.prep_vmsql_db()
 	##
 	## Check the VMSQL database before opening the database.  Called from
@@ -265,7 +258,7 @@ _private _method vmsql_database_test_mixin.import_vmsql_dump_via_psql(dataset_na
 	cmd << write_string(cmd, " -U ", user, " -d ", dataset_name.write_string, " -f ", file_path)
 	write("Importing dump using:")
 	write(cmd)
-	_if _self.vmsql_debug_mode? _isnt _true
+	_if !msf_debug?! _isnt _true
 	_then
 		cmd << write_string(cmd, " > nul 2>$1")
 	_endif		
