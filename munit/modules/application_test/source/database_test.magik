@@ -117,7 +117,7 @@ _method database_test.database_path
 			_return _self.vmsql_database_path
 		_endif
 	_else
-		>> _self.vmds_database_path
+		_return _self.vmds_database_path
 	_endif
 _endmethod
 $
