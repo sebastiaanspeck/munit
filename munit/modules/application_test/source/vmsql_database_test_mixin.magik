@@ -121,7 +121,8 @@ _method vmsql_database_test_mixin.one_time_tear_down_vmsql()
 	## Called by one_time_tear_down().  If vmds datases were replaced with vmsql
 	## then they are restored.
 	##
-	_if _self.database_storage_mode _isnt :vmsql _orif 
+	_if _self.database_storage_mode _isnt :vmsql _orif
+		gis_program_manager.ace_top_view _is _unset _orif
 		_not gis_program_manager.ace_top_view.has_checkpoint?(_self.ace_before_checkpoint_name)
 	_then
 		_return
@@ -214,7 +215,7 @@ _private _method vmsql_database_test_mixin.import_vmsql_dump(dataset_name, _opti
 	## otherwise we use an ant target.
 	##
 	file << dump_file.default(_self.vmsql_dump_file_name(dataset_name))
-	_if _self.vmsql_psql_available?
+	_if _self.is_psql_available?
 	_then
 		_try _with cond
 			_self.import_vmsql_dump_via_psql(dataset_name, file)
@@ -243,19 +244,20 @@ _private _method vmsql_database_test_mixin.is_vmds_database_local?
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.vmsql_psql_available?
+_private _method vmsql_database_test_mixin.is_psql_available?
 	##
 	## Checks whether the Postgres psql commandline utility is available
 	##
 	available? << _false
-	_block
-		_handling error _with procedure
+	_try
 		(status, exit_code) << system.do_command("psql --version")
 		_if status _is :exited _andif exit_code = 0
 		_then
 			available? << _true
 		_endif
-	_endblock		
+	_when error
+		# Leave available? set to false
+	_endtry
 	_return available?
 _endmethod
 $
