@@ -65,14 +65,11 @@ _private _method vmsql_database_test_mixin.prep_vmsql_db()
 				_if view.collections.includes_key?(:sw_gis!world)
 				_then
 					import? << _false
-				_else
-					write("Collection sw_gis!world not found!")
 				_endif
 			_protection
 				view.discard()
 			_endprotect
 		_when error
-			write("Error when trying to open dataset ", dataset_name, ": ", cond.report_contents_string)
 			# Import the dump
 		_endtry
 		_if import?
@@ -104,22 +101,16 @@ _private _method vmsql_database_test_mixin.one_time_set_up_vmsql()
 				_self.is_vmds_database_local? # Dev mode - replace
 			_then
 				vmsql_dsm << _self.replace_vmds_dataset_with_vmsql(dsm)
-				_self.import_vmsql_dump(vmsql_dsm.name)
-				vmsql_dsm.open(vmsql_dsm.get_connect_spec())
-			# _elif dsm.is_kind_of?(vmsql_manager_mixin) _andif
-			# 	_self.import_vmsql_before_suite? _is _true _andif
-			# 	_self.import_vmsql_before_each_test? _isnt _true
-			# _then
-			# 	write("Closing ",dsm)
-			# 	dsm.close()
-			# 	vmsql_dsm << dsm
+			_elif dsm.is_kind_of?(vmsql_manager_mixin) _andif
+				_self.import_vmsql_before_suite? _is _true _andif
+				_self.import_vmsql_before_each_test? _isnt _true
+			_then
+				vmsql_dsm << dsm
 			_endif
-			# _if vmsql_dsm _isnt _unset
-			# _then
-			# 	_self.import_vmsql_dump(vmsql_dsm.name)
-			# 	write("Reopening ",vmsql_dsm)
-			# 	vmsql_dsm.open(vmsql_dsm.get_connect_spec())
-			# _endif
+			_if vmsql_dsm _isnt _unset
+			_then
+				_self.import_vmsql_dataset(vmsql_dsm)
+			_endif
 		_endif
 	_endloop
 _endmethod
@@ -130,8 +121,8 @@ _method vmsql_database_test_mixin.one_time_tear_down_vmsql()
 	## Called by one_time_tear_down().  If vmds datases were replaced with vmsql
 	## then they are restored.
 	##
-	write("IN one_time_tear_down_vmsql")
-	_if _self.database_storage_mode _isnt :vmsql
+	_if _self.database_storage_mode _isnt :vmsql _orif 
+		_not gis_program_manager.ace_top_view.has_checkpoint?(_self.ace_before_checkpoint_name)
 	_then
 		_return
 	_endif
@@ -167,15 +158,36 @@ _private _method vmsql_database_test_mixin.set_up_vmsql()
 			_if (dsm << _self.dataset_manager(dataset_name)) _isnt _unset _andif 
 				dsm.is_kind_of?(vmsql_manager_mixin)
 			_then
-				_if dsm.dataset_open?()
-				_then
-					dsm.close()
-				_endif
-				_self.import_vmsql_dump(dsm.name)
-				dsm.open(dsm.get_connect_spec())
+				# _if dsm.dataset_open?()
+				# _then
+				# 	dsm.close()
+				# _endif
+				# _self.import_vmsql_dump(dsm.name)
+				# dsm.open(dsm.get_connect_spec())
+				_self.import_vmsql_dataset(dsm)
 			_endif
 		_endloop
 	_endif
+_endmethod
+$
+
+_private _method vmsql_database_test_mixin.import_vmsql_dataset(dataset_manager)
+	##
+	## Uses import_vmsql_dump() to import the dump for the specified dataset_manager.
+	_if dataset_manager.dataset_open?()	
+	_then
+		_if !msf_debug?! _is _true
+		_then
+			write(_self.class_name, " closing ",dsm)
+		_endif
+		dsm.close()
+	_endif
+	_self.import_vmsql_dump(dataset_manager.name)
+	_if !msf_debug?! _is _true
+	_then
+		write(_self.class_name, " reopening ",vmsql_dsm)
+	_endif
+	dataset_manager.open(dataset_manager.get_connect_spec())
 _endmethod
 $
 
@@ -358,7 +370,6 @@ $
 
 _private _method vmsql_database_test_mixin.replace_vmds_dataset_with_vmsql(dataset_manager)
 	parent_soc << dataset_manager.parent_soc
-	write("Replacing ", dataset_manager.class_name, " dataset ", dataset_manager.name, " with VMSQL")
 	ace_top << gis_program_manager.ace_top_view
 	_if _not ace_top.has_checkpoint?(_self.ace_before_checkpoint_name)
 	_then
