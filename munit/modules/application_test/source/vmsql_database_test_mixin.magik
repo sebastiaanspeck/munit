@@ -45,18 +45,40 @@ $
 
 _private _method vmsql_database_test_mixin.prep_vmsql_db()
 	##
-	## Check the VMSQL database before opening the database.  Called from
-	## check_correct_database_open() before we do open_database.
+	## Prepares a VMSQL database to be opened by open_database().  Called
+	## from check_correct_database_open() before we do open_database.  The database
+	## that will be opened might try to open one or more of the vmsql_datasets. 
+	## This method will do basic tests to make sure the datasets can be opened,
+	## if they cannot then the dump will be imported upfront.
 	##
-	_if _self.database_storage_mode _isnt :vmsql _orif
-		_self.import_vmsql_before_suite? _isnt _true
+	_if _self.database_storage_mode _isnt :vmsql
 	_then
 		_return
 	_endif
-	
 	_for dataset_name _over _self.vmsql_datasets.fast_elements()
 	_loop
-		_self.import_vmsql_dump(dataset_name)
+		import? << _true
+		_try _with cond
+			view << database_view.new(:readonly, :searchpath, {write_string("/",dataset_name)}, :concurrency_mode, :vmsql)
+			_protect
+				view.add_file("dd.ds", :mode, :dontcare)
+				_if view.collections.includes_key?(:sw_gis!world)
+				_then
+					import? << _false
+				_else
+					write("Collection sw_gis!world not found!")
+				_endif
+			_protection
+				view.discard()
+			_endprotect
+		_when error
+			write("Error when trying to open dataset ", dataset_name, ": ", cond.report_contents_string)
+			# Import the dump
+		_endtry
+		_if import?
+		_then
+			_self.import_vmsql_dump(dataset_name)
+		_endif
 	_endloop
 _endmethod
 $
