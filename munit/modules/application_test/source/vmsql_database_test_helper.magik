@@ -3,15 +3,17 @@ _package sw
 
 _pragma(classify_level=debug)
 ##
-## This mixin implements the set up and tear down of vmsql database_tests.
+## This class extends database_test with specialised behaviour for VMSQL
+## database tests.  database_test inherits from this class.
 ##
-## Subclass expected to implement replaced_dataset_managers which should a property_list.
-##
-def_mixin(:vmsql_database_test_mixin)
+def_slotted_exemplar(:vmsql_database_test_helper,
+	{
+		{:replaced_dataset_managers, _unset}
+	})
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
-vmsql_database_test_mixin.define_shared_variable(:database_storage_mode, 
+vmsql_database_test_helper.define_shared_variable(:database_storage_mode, 
 	##
 	## Can be set to :vmsql in order to create datasets in Postgres.
 	##
@@ -19,7 +21,7 @@ vmsql_database_test_mixin.define_shared_variable(:database_storage_mode,
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
-vmsql_database_test_mixin.define_shared_variable(:import_vmsql_before_suite?, 
+vmsql_database_test_helper.define_shared_variable(:import_vmsql_before_suite?, 
 	## Controls whether the VMSQL dump is to be imported as part of the
 	## one_time_set_up().  Ignored if import_vmsql_before_each_test? is true.  When
 	## both import_vmsql_before_suite? and import_vmsql_before_each_test is set to
@@ -28,22 +30,32 @@ vmsql_database_test_mixin.define_shared_variable(:import_vmsql_before_suite?,
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
-vmsql_database_test_mixin.define_shared_variable(:import_vmsql_before_each_test?, 
+vmsql_database_test_helper.define_shared_variable(:import_vmsql_before_each_test?, 
 	## When this is set to false the postgres dump will be loaded in
 	## one_time_set_up.  When set to true the Postgres dump will be loaded before
 	## each test, i.e. from the set_up.
-	_false, :private)
+	_true, :private)
 $
 
-_pragma(classify_level=debug)
-vmsql_database_test_mixin.define_shared_variable(:vmsql_datasets,
+_pragma(classify_level=advanced, usage={subclassable})
+vmsql_database_test_helper.define_shared_variable(:vmsql_dump_file_name, 
+	## Property list used to specify dump file names for one or more of the
+	## vmsql_datasets. If this is not specified then the file name will default to
+	## camdb_<dataset name>.dump.
+	property_list, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+vmsql_database_test_helper.define_shared_variable(:vmsql_datasets,
 	##
-	## The location of the cambridge_db to use for VMSQL.
+	## Specifies the names of datasets which the suite requires to be vmsql
+	## datasets.  If dataset managers exist with these names but are not vmsql,
+	## then they will be replaced with vmsql datasets.
 	##
 	{:gis}, :private)
 $
 
-_private _method vmsql_database_test_mixin.prep_vmsql_db()
+_private _method vmsql_database_test_helper.prep_vmsql_db()
 	##
 	## Prepares a VMSQL database to be opened by open_database().  Called
 	## from check_correct_database_open() before we do open_database.  The database
@@ -57,22 +69,7 @@ _private _method vmsql_database_test_mixin.prep_vmsql_db()
 	_endif
 	_for dataset_name _over _self.vmsql_datasets.fast_elements()
 	_loop
-		import? << _true
-		_try _with cond
-			view << database_view.new(:readonly, :searchpath, {write_string("/",dataset_name)}, :concurrency_mode, :vmsql)
-			_protect
-				view.add_file("dd.ds", :mode, :dontcare)
-				_if view.collections.includes_key?(:sw_gis!world)
-				_then
-					import? << _false
-				_endif
-			_protection
-				view.discard()
-			_endprotect
-		_when error
-			# Import the dump
-		_endtry
-		_if import?
+		_if _not _self.vmsql_dataset_can_be_opened?(dataset_name)
 		_then
 			_self.import_vmsql_dump(dataset_name)
 		_endif
@@ -80,13 +77,41 @@ _private _method vmsql_database_test_mixin.prep_vmsql_db()
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.one_time_set_up_vmsql()
+_private _method vmsql_database_test_helper.vmsql_dataset_can_be_opened?(dataset_name)
+	##
+	## Checks whether the vmsql dataset DATASET_NAME will open successfully. Used
+	## by prep_vmsql_db() to determine whether the dump should be loaded before
+	## opening a database, which may potentially try to open the dataset in
+	## question.
+	##
+	# Creates a database_view, adds dd.ds and checks whether sw_gis!world exists.
+	can_open? << _false
+	_try _with cond
+		view << database_view.new(:readonly, :searchpath, {write_string("/",dataset_name)}, :concurrency_mode, :vmsql)
+		_protect
+			view.add_file("dd.ds", :mode, :dontcare)
+			_if view.collections.includes_key?(:sw_gis!world)
+			_then
+				can_open? << _true
+			_endif
+		_protection
+			view.discard()
+		_endprotect
+	_when error
+		# Fails to open
+	_endtry
+	_return can_open?
+_endmethod
+$
+
+_private _method vmsql_database_test_helper.one_time_set_up_vmsql()
 	##
 	## Gets called from one_time_set_up() to do one-time setup for VMSQL suites.
 	## If the session has a local database open, i.e. hosted on the current
 	## machine, then datasets specified in vmsql_datasets will be replaced with
 	## equivalent vmsql datasets.  Changes are undone by one_time_tear_down_vmsql().
 	## 
+	.replaced_dataset_managers << property_list.new()
 	_if _self.database_storage_mode _isnt :vmsql
 	_then
 		_return
@@ -116,7 +141,7 @@ _private _method vmsql_database_test_mixin.one_time_set_up_vmsql()
 _endmethod
 $
 
-_method vmsql_database_test_mixin.one_time_tear_down_vmsql()
+_method vmsql_database_test_helper.one_time_tear_down_vmsql()
 	##
 	## Called by one_time_tear_down().  If vmds datases were replaced with vmsql
 	## then they are restored.
@@ -127,27 +152,28 @@ _method vmsql_database_test_mixin.one_time_tear_down_vmsql()
 	_then
 		_return
 	_endif
-	_for name, vmds_dsm _over _self.replaced_dataset_managers.fast_keys_and_elements()
+	_for name, vmds_dsm _over .replaced_dataset_managers.fast_keys_and_elements()
 	_loop
 		vmsql_dsm << vmds_dsm.parent_soc.dataset_managers[name]
 		_if (vmsql_dsm.dataset_open?())
 		_then
+			write("Closing ", vmsql_dsm.name)
 			vmsql_dsm.close()
 		_endif
 	_endloop
-	gis_program_manager.ace_top_view.go_to_checkpoint(_self.ace_before_checkpoint_name, :write)
+	gis_program_manager.ace_top_view.go_to_checkpoint(_self.ace_before_checkpoint_name, :write, _true)
 	gis_program_manager.ace_top_view.remove_checkpoint(_self.ace_before_checkpoint_name)
 	gis_program_manager.ace_top_view.switch(:readonly)
-	_for name, vmds_dsm _over _self.replaced_dataset_managers.keys_and_elements()
+	_for name, vmds_dsm _over .replaced_dataset_managers.keys_and_elements()
 	_loop
 		vmds_dsm.parent_soc.dataset_managers[name] << vmds_dsm
 		vmds_dsm.open(vmds_dsm.get_connect_spec())
-		_self.replaced_dataset_managers.remove_key(name)
+		.replaced_dataset_managers.remove_key(name)
 	_endloop
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.set_up_vmsql()
+_private _method vmsql_database_test_helper.set_up_vmsql()
 	##
 	## Called from set_up() to import VMSQL db when appropriate.
 	##
@@ -159,12 +185,6 @@ _private _method vmsql_database_test_mixin.set_up_vmsql()
 			_if (dsm << _self.dataset_manager(dataset_name)) _isnt _unset _andif 
 				dsm.is_kind_of?(vmsql_manager_mixin)
 			_then
-				# _if dsm.dataset_open?()
-				# _then
-				# 	dsm.close()
-				# _endif
-				# _self.import_vmsql_dump(dsm.name)
-				# dsm.open(dsm.get_connect_spec())
 				_self.import_vmsql_dataset(dsm)
 			_endif
 		_endloop
@@ -172,7 +192,7 @@ _private _method vmsql_database_test_mixin.set_up_vmsql()
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.import_vmsql_dataset(dataset_manager)
+_private _method vmsql_database_test_helper.import_vmsql_dataset(dataset_manager)
 	##
 	## Uses import_vmsql_dump() to import the dump for the specified dataset_manager.
 	_if dataset_manager.dataset_open?()	
@@ -192,7 +212,7 @@ _private _method vmsql_database_test_mixin.import_vmsql_dataset(dataset_manager)
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.ace_before_checkpoint_name
+_method vmsql_database_test_helper.ace_before_checkpoint_name
 	##
 	## Returns a name for the checkpoint created in the ACE Top.
 	##
@@ -206,7 +226,7 @@ _private _method vmsql_database_test_mixin.ace_before_checkpoint_name
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.vmsql_dump_file_name(dataset_name)
+_private _method vmsql_database_test_helper.vmsql_dump_file_name(dataset_name)
 	##
 	## Returns the dump file name for the specified dataset.
 	##
@@ -214,13 +234,16 @@ _private _method vmsql_database_test_mixin.vmsql_dump_file_name(dataset_name)
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.import_vmsql_dump(dataset_name, _optional dump_file)
+_private _method vmsql_database_test_helper.import_vmsql_dump(dataset_name, _optional dump_file)
 	##
 	## Imports the dump into postgres for the specified dataset.  If the Postgres
 	## commandline utility psql is available on this machine then that is used,
 	## otherwise we use an ant target.
 	##
-	file << dump_file.default(_self.vmsql_dump_file_name(dataset_name))
+	_if (file << dump_file.default(_self.vmsql_dump_file_name[dataset_name])) _is _unset
+	_then
+		file << _self.vmsql_dump_file_name(dataset_name)
+	_endif
 	_if _self.is_psql_available?
 	_then
 		_try _with cond
@@ -235,22 +258,29 @@ _private _method vmsql_database_test_mixin.import_vmsql_dump(dataset_name, _opti
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.is_vmds_database_local?
+_method vmsql_database_test_helper.is_vmds_database_local?
 	##
 	## Returns true if the database that we have open is hosted on the same machine
 	## as where our session is running.  This is used by VMSQL set-ups to enable
 	## developer mode and replace vmds datasets with vmsql when running
 	## database_tests locally.
-	##
+	#
 	_if (ace_top << gis_program_manager.ace_top_view) _isnt _unset
 	_then
-		_return system.file_exists?(ace_top.searchpath.at_using_default("", 1))
+		prefix_delimiter << "::"
+		path << ace_top.searchpath.at_using_default("", 1)
+		_if (index << path.index_of_seq(prefix_delimiter)) _isnt _unset 
+		_then
+			# Remove prefix
+			path << path.subseq(index+prefix_delimiter.size)
+		_endif
+		_return system.file_exists?(path)
 	_endif 
 	_return _false
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.is_psql_available?
+_private _method vmsql_database_test_helper.is_psql_available?
 	##
 	## Checks whether the Postgres psql commandline utility is available
 	##
@@ -268,7 +298,7 @@ _private _method vmsql_database_test_mixin.is_psql_available?
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.import_vmsql_dump_via_psql(dataset_name, dump_file)
+_private _method vmsql_database_test_helper.import_vmsql_dump_via_psql(dataset_name, dump_file)
 	##
 	## Uses the Postgres psql commandline utility to import the database dump file
 	## for the specified dataset.  Intended to support developers in running
@@ -286,10 +316,10 @@ _private _method vmsql_database_test_mixin.import_vmsql_dump_via_psql(dataset_na
 	_then
 		cmd << write_string(cmd, " -p ", port)
 	_endif
-	_if (user << system.getenv("SW_PGUSERNAME")) _is _unset
+	_if (user << system.getenv("SW_PGUSER")) _is _unset
 	_then
 		user << "smallworld"
-		write("Please use env var SW_PGUSERNAME to specify Postgres username.  Using default (smallworld).")
+		write("Please use env var SW_PGUSER to specify Postgres username.  Using default (smallworld).")
 	_endif
 	_if (pwd << system.getenv("SW_PGPASSWORD")) _is _unset 
 	_then
@@ -312,7 +342,7 @@ _private _method vmsql_database_test_mixin.import_vmsql_dump_via_psql(dataset_na
 	_endif
 _endmethod 
 
-_private _method vmsql_database_test_mixin.import_vmsql_dump_via_ant(dataset_name, dump_file)
+_private _method vmsql_database_test_helper.import_vmsql_dump_via_ant(dataset_name, dump_file)
 	##
 	## Imports a a dump file named camdb_DATASET_NAME.dump using the
 	## import-vmsql-dump ant target.
@@ -336,7 +366,7 @@ _private _method vmsql_database_test_mixin.import_vmsql_dump_via_ant(dataset_nam
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.vmsql_ant_build_xml
+_private _method vmsql_database_test_helper.vmsql_ant_build_xml
 	##
 	## Import a a dump file named camdb_DATASET_NAME.dump from the 
 	##
@@ -350,7 +380,7 @@ _private _method vmsql_database_test_mixin.vmsql_ant_build_xml
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.vmsql_database_dump_file(dump_file)
+_private _method vmsql_database_test_helper.vmsql_database_dump_file(dump_file)
 	##
 	## Works out the local path and filename for a camdb dump for the specified
 	## dataset.
@@ -365,7 +395,7 @@ _private _method vmsql_database_test_mixin.vmsql_database_dump_file(dump_file)
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.dataset_manager(name)
+_private _method vmsql_database_test_helper.dataset_manager(name)
 	_for soc _over gis_program_manager.spatial_object_controllers()
 	_loop
 		_if (dsm << soc.dataset_manager(name)) _isnt _unset
@@ -376,7 +406,7 @@ _private _method vmsql_database_test_mixin.dataset_manager(name)
 _endmethod
 $
 
-_private _method vmsql_database_test_mixin.replace_vmds_dataset_with_vmsql(dataset_manager)
+_private _method vmsql_database_test_helper.replace_vmds_dataset_with_vmsql(dataset_manager)
 	parent_soc << dataset_manager.parent_soc
 	ace_top << gis_program_manager.ace_top_view
 	_if _not ace_top.has_checkpoint?(_self.ace_before_checkpoint_name)
@@ -394,7 +424,7 @@ _private _method vmsql_database_test_mixin.replace_vmds_dataset_with_vmsql(datas
 	vmsql_dsm.store_connect_spec(vmsql_manager.default_connect_specification)
 	gis_program_manager.add_dataset(parent_soc.name, dataset_manager.name, :vmsql_manager)
 	parent_soc.dataset_managers[dataset_manager.name] << vmsql_dsm
-	_self.replaced_dataset_managers[dataset_manager.name] << dataset_manager
+	.replaced_dataset_managers[dataset_manager.name] << dataset_manager
 	ace_top.commit()
 	ace_top.switch(:readonly)
 	_return vmsql_dsm
