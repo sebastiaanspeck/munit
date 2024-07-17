@@ -34,7 +34,7 @@ vmsql_database_test_helper.define_shared_variable(:import_vmsql_before_each_test
 	## When this is set to false the postgres dump will be loaded in
 	## one_time_set_up.  When set to true the Postgres dump will be loaded before
 	## each test, i.e. from the set_up.
-	_true, :private)
+	_false, :private)
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
