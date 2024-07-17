@@ -854,7 +854,7 @@ _private _method test_case.recreate_vmsql_database(database_name)
 	a_view << database_view.new(:write, :searchpath, {write_string("/",database_name)}, :concurrency_mode, :vmsql)
 	_protect
 		# Just add a dummy file so we can drop all schemas.
-		a_view.add_file("vmsql.ds", :mode, :dontcare)
+		a_view.add_file("recreate.ds", :mode, :dontcare)
 		ok? << _true
 	_protection
 		_if _not ok?
