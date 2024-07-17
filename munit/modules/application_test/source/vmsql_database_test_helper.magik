@@ -330,14 +330,15 @@ _private _method vmsql_database_test_helper.import_vmsql_dump_via_psql(dataset_n
 	cmd << write_string(cmd, " -U ", user, " -d ", dataset_name.write_string, " -f ", file_path)
 	write("Importing dump using:")
 	write(cmd)
-	_if !msf_debug?! _isnt _true
-	_then
-		cmd << write_string(cmd, " > nul 2>$1")
-	_endif		
 	system.putenv("PGPASSWORD", pwd)
-	(status, exit_code) << system.do_command(cmd)
+	outstr << internal_text_output_stream.new()
+	_block
+		_dynamic !output! << outstr
+		(status, exit_code) << system.do_command(cmd)
+	_endblock
 	_if status _isnt :exited _orif exit_code ~= 0
 	_then
+		write("PSQL output:", %newline, outstr.string)
 		condition.raise(:error, :string, write_string("PSQL returned status ", status, " and exit code ", exit_code))
 	_endif
 _endmethod 
