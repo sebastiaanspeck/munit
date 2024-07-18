@@ -1,0 +1,15 @@
+<project>
+    <property environment="env"/>
+
+    <property name="mojo_source_path" value="${env.GITHUB_WORKSPACE}/../"/>
+    <property name="mojo_installer_dir" value="${env.GITHUB_WORKSPACE}"/>
+
+    <property name="ignore_modules" value="munit_gui,munit_gui_tests,munit_config_magik_images,munit_image_latest,munit_image_41x,munit_image_420,munit_eo_cim_adapter_int_tests,munit_eo_cim_circuit_export_tests,munit_eo_cim_mapping_tests,munit_eo_dnom_design_request_tests,munit_eo_dnom_station_export_tests"/>
+    <property name="mojo_strict" value="false"/>
+    <property name="java_build_xml_path" value="test_utils/xml_file_comparator/build.xml"/>
+    <property name="smallworld.gis.dir" value="${env.SMALLWORLD_GIS}"/>
+    <property name="requires_ivy" value="true"/>
+    <property name="requires_jacoco_report" value="false"/>
+
+    <import file="${env.KRN_CORE_LOCATION}/modules/mojo_lifecycle/resources/base/data/blueprint.xml"/>
+</project>
