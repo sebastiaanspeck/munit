@@ -424,11 +424,11 @@ _private _method database_test.check_correct_database_open()
 	_then 
 		# Suppress witterage
 		_handling information _with procedure 
-		# _dynamic !output!
-		# _if !msf_debug?! _isnt _true
-		# _then
-		# 	!output!<< internal_text_output_stream.new()
-		# _endif
+		_dynamic !output!
+		_if !msf_debug?! _isnt _true
+		_then
+			!output!<< internal_text_output_stream.new()
+		_endif
 
 		ds_environment.concurrency_mode << _self.concurrency_mode
 		smallworld_product.set_startup_option(:authorisation, :singleuser)
