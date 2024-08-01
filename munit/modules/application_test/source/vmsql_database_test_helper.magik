@@ -387,7 +387,7 @@ _private _method vmsql_database_test_helper.vmsql_database_dump_file(dump_file)
 	## dataset.
 	##
 	munit_prod_path << smallworld_product.product(:munit).directory
-	file << system.pathname_down(munit_prod_path, "..", "..", "vmsql-database-dumps", "database_dumps", dump_file)
+	file << system.pathname_down(munit_prod_path, "..", "..", "build_tools", "vmsql", "dumps", "database_dumps", dump_file)
 	_if _not system.file_exists?(file)
 	_then
 		condition.raise(:error, :string, write_string("Dump file does not exist: ", file))
