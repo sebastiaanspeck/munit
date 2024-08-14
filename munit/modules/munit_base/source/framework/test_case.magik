@@ -52,7 +52,7 @@ _pragma(classify_level=basic,topic=MUnit,usage=subclassable)
 ## a_suite.add_test( math_test.new( :test_divide_by_zero|()| ))
 def_slotted_exemplar(:test_case,
 {
-	{ :name , _unset },
+	{ :name , _unset, :readable },
 	{ :full_name, _unset },
         { :retry_count, 0 }
 },
@@ -544,7 +544,7 @@ _method test_case.write_on( a_stream )
 	_then
 		_super.write_on( a_stream )
 	_else 
-		.name.write_on( a_stream )
+		_self.get_name().write_on( a_stream )
 
 		" [".write_on( a_stream )
 		
@@ -908,7 +908,7 @@ _private _method test_case.system64?
 	##         _false if it is 32bit,
 	##         _true if it is 64bit
 	## subclass implementation can call _self.system64?(view) 
-	>> _unset  
+	>> _maybe
 _endmethod
 $
 
