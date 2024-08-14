@@ -59,9 +59,25 @@ _endmethod
 $
 
 _pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper.restore_stubbed_procedures()
+	##
+	## Restores all stubbed procedures to their origianl states.
+	##
+	_lock _self
+		_for proc_key, original_proc _over _self.replaced_proc_data.keys_and_elements()
+		_loop
+			(pkg, name) << _self.get_package_and_proc_name(proc_key)
+			pkg[name] << original_proc
+			_self.replaced_proc_data.remove_key(proc_key)
+		_endloop
+	_endlock
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
 _private _method stub_proc_helper.get_proc_key(a_pkg, a_name)
 	##
-	## Generate a key symbol
+	## Generate a key symbol with format: "{PACKAGE_NAME}:{PROCEDURE_NAME}"
 	##
 	result << a_pkg.name + ":" + a_name
 	_return result.as_symbol()
