@@ -96,3 +96,24 @@ _private _method database_system_test_mixin.close_datasets()
 	_endloop	
 _endmethod
 $
+_pragma(classify_level=debug)
+_private _method database_system_test_mixin.system64?
+	## returns _maybe if there is not database,
+	##         _false if it is 32bit,
+	##         _true if it is 64bit
+	##
+	view?<< _false 
+	_for ds_name _over _self.writable_dataset_names.fast_elements()
+	_loop
+		_if (v<< _self.dataset( ds_name )) _isnt _unset
+		_then
+			view?<< _true 
+			_if _self.system64?()
+			_then
+				_return _true
+			_endif
+		_endif 
+	_endloop
+	>> _if view? _then >> _false _else >> _maybe _endif
+_endmethod
+$

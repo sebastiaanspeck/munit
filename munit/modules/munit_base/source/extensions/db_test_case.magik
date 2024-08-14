@@ -754,3 +754,25 @@ _private _method db_test_case.check_for_in_memory_database()
 		condition.raise(:munit_db_not_in_memory)
 	_endif
 _endmethod
+$
+_pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
+_private _method db_test_case.system64?
+	## returns _maybe if there is not database,
+	##         _false if it is 32bit,
+	##         _true if it is 64bit
+	##
+	view?<< _false 
+	_for ds_view _over .ds_views.fast_elements()
+	_loop
+		_if ds_view _isnt _unset
+		_then 
+			view? << _true 
+			_if _self.system64?(ds_view)
+			_then
+				_return _true
+			_endif
+		_endif 
+	_endloop
+	>> _if view? _then >> _false _else >> _maybe _endif 
+_endmethod
+$
