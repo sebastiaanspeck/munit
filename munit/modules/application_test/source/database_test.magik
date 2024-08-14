@@ -534,7 +534,7 @@ _private _method database_test.system64?
 		_if (v<< _self.dataset( ds_name )) _isnt _unset
 		_then
 			view?<< _true 
-			_if _self.system64?()
+			_if _self.system64?(v)
 			_then
 				_return _true
 			_endif
