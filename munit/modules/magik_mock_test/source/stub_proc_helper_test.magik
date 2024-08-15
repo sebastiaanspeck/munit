@@ -30,6 +30,20 @@ _endmethod
 $
 
 _pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.test_restore_all()
+	##
+	## test full workflow
+	## test replace + restore all
+	##
+	_self.then_procedure_returns(%D).
+		when_replace_procedure(:dummy_float).
+		then_procedure_returns(4.0123).
+		when_restore_all().
+		then_procedure_returns(%D)
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
 _method stub_proc_helper_test.test_error_raised_when_invalid_procedure()
 	##
 	## test error raised when passed in invalid procedure
@@ -86,6 +100,16 @@ _method stub_proc_helper_test.when_restore_procedure()
 	## restore `stub_proc_helper_dummy_proc` original procedure
 	##
 	stub_proc_helper.restore_stubbed_procedure(_self.proc_name)
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.when_restore_all()
+	##
+	## restore all stored procedures
+	##
+	stub_proc_helper.restore_stubbed_procedures()
 	_return _self
 _endmethod
 $

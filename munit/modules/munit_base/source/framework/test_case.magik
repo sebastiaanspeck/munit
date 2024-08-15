@@ -504,6 +504,7 @@ _method test_case.tear_down()
 	_self.stubbed_alerts.empty()	
 	
 	stub_method_helper.restore_stubbed_methods()
+	stub_proc_helper.restore_stubbed_procedures()
 	
 _endmethod
 $
