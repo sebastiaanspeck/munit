@@ -213,8 +213,12 @@ _pragma(classify_level=advanced,topic=MUnit)
 _method test_case.run_bare()
 	## Runs the bare test sequence.
 	
-	_self.one_time_behaviour()
-	ignored? << _self.ignore_test(_self.get_name())
+	ignored? << _self.ignore_test(.name)
+	_if _not ignored?
+	_then
+		_self.one_time_behaviour()
+	_endif
+
 	_protect
 		_if _not ignored?
 		_then
