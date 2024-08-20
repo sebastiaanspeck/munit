@@ -358,7 +358,7 @@ _private _method test_case.ignore_test(test_name)
 		_return _false
 	_endif
 	
-	# Test is not ignored
+	# Test is ignored
 	method << _self.method(test_name)
 	owning_class << method.owner.meta_at(:exemplar_global).value
 	_local msg << write_string("Test case ", _self.class_name," is ignoring ",test_name, " (defined in ",owning_class.class_name,")")
