@@ -425,10 +425,11 @@ _private _method database_test.check_correct_database_open()
 		# Suppress witterage
 		_handling information _with procedure 
 		_dynamic !output!
-		_if !msf_debug?! _isnt _true
-		_then
-			!output!<< internal_text_output_stream.new()
-		_endif
+    _self.suppress_witterage(!msf_debug?!)
+		# _if !msf_debug?! _isnt _true
+		# _then
+		# 	!output!<< internal_text_output_stream.new()
+		# _endif
 
 		ds_environment.concurrency_mode << _self.concurrency_mode
 		smallworld_product.set_startup_option(:authorisation, :singleuser)
@@ -440,6 +441,8 @@ _private _method database_test.check_correct_database_open()
 		_endif
 		gis_program_manager.reinitialise()
 		_self.prep_vmsql_db()
+    _self.suppress_witterage(_false)
+    write("About to open database: ", _self.database_path)
 		open_database({_self.database_path})
 		_if interactive?
 		_then 
