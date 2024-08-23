@@ -213,8 +213,12 @@ _pragma(classify_level=advanced,topic=MUnit)
 _method test_case.run_bare()
 	## Runs the bare test sequence.
 	
-	_self.one_time_behaviour()
-	ignored? << _self.ignore_test(_self.get_name())
+	ignored? << _self.ignore_test(.name)
+	_if _not ignored?
+	_then
+		_self.one_time_behaviour()
+	_endif
+
 	_protect
 		_if _not ignored?
 		_then
@@ -354,7 +358,7 @@ _private _method test_case.ignore_test(test_name)
 		_return _false
 	_endif
 	
-	# Test is not ignored
+	# Test is ignored
 	method << _self.method(test_name)
 	owning_class << method.owner.meta_at(:exemplar_global).value
 	_local msg << write_string("Test case ", _self.class_name," is ignoring ",test_name, " (defined in ",owning_class.class_name,")")
