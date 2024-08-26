@@ -255,12 +255,12 @@ _method db_test_case.run_bare()
 		!msf_debug?! << _true
 	_endif
 	_self.stub_map_rendering_if_required()
-	_self.one_time_behaviour()
 
 	ignored? << _self.ignore_test(_self.get_name())
 	_protect
 		_if _not ignored?
 		_then
+			_self.one_time_behaviour()
 			_self.setup_db() 
 			_self.set_up()
 		_endif
