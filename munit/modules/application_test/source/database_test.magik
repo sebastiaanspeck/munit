@@ -522,24 +522,23 @@ _private _method database_test.ant_executable
 	_return ant_exe
 _endmethod
 $
-_pragma(classify_level=debug)
+_pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
 _private _method database_test.system64?
-	## returns _maybe if there is not database,
-	##         _false if it is 32bit,
-	##         _true if it is 64bit
+	## returns _maybe if there is not any database view,
+	##         _true there is at least one 64bit view
+	##         _false they are all 32bit
 	##
 	view?<< _false 
-	_for ds_name _over _self.writable_dataset_names.fast_elements()
+	_for view _over gis_program_manager.databases.fast_elements()
 	_loop
-		_if (v<< _self.dataset( ds_name )) _isnt _unset
-		_then
-			view?<< _true 
-			_if _self.system64?(v)
-			_then
-				_return _true
-			_endif
-		_endif 
+		view?<< _true 
+		_if _self.system64?(view)
+		_then _return _true
+		_endif
 	_endloop
-	>> _if view? _then >> _false _else >> _maybe _endif
+	>> _if view?
+	   _then >> _false
+	   _else >> _maybe
+	   _endif
 _endmethod
 $

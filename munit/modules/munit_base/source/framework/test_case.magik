@@ -905,9 +905,9 @@ _endmethod
 $
 _pragma(classify_level=debug, topic={MUnit},usage=subclassable)
 _private _method test_case.system64?
-	## returns _maybe if there is not database,
-	##         _false if it is 32bit,
-	##         _true if it is 64bit
+	## returns _maybe if there is not any database view,
+	##         _true there is at least one 64bit view
+	##         _false they are all 32bit	
 	## subclass implementation can call _self.system64?(view) 
 	>> _maybe
 _endmethod
