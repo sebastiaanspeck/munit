@@ -765,31 +765,32 @@ _private _method db_test_case.system64?
 	# unfortunatelly the implementation is crap because 
 	# there is a slot and then a method which can be overridden
 	# so we have two sources of views
-	_if (result<< _self.views64?(_self.ds_views) _is _maybe)
-	_then
-		>> _self.views64?(.ds_views)
-	_else
-		>> result 
-	_endif 
+	>> _if (result<< _self.views64?(_self.ds_views) _is _maybe)
+	   _then  >> _self.views64?(.ds_views)
+	   _else  >> result 
+	   _endif 
 _endmethod
 $
 _pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
 _private _method db_test_case.views64?(views)
-	## we don't know what view tests uses so we return whether the
-	## first view we encounter is system64 or not
-	## 
+	## we don't know what view tests uses
+	## we return true if any of the views we encounter is system64
+	##
+	view?<< _false
 	_for ds_view _over views.fast_elements()
 	_loop
 		_if ds_view _isnt _unset
-		_then 
+		_then
+			view?<< _true 
 			_if _self.system64?(ds_view)
 			_then
 				_return _true
-			_else
-				_return _false 
-			_endif
+			_endif 
 		_endif 
 	_endloop
-	>> _maybe 
+	>> _if view?
+	   _then >> _false
+	   _else >> _maybe
+	   _endif 
 _endmethod
 $
