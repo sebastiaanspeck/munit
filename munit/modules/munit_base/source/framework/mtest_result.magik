@@ -140,7 +140,6 @@ _method mtest_result.run_protected( a_test , a_protectable )
                 final? << attempt > a_test.retry_count
                 ok? << _true
 		normal_exit? << _false
-		
 		_catch outer_tag
 		       _protect 
 			       _catch tag
@@ -184,6 +183,10 @@ _method mtest_result.run_protected( a_test , a_protectable )
 				       _else me.report_non_final_problem( a_test, a_condition , _true, attempt)
 				       _endif 
 				       ok? << _false
+				       _if final? _andif !msf_debug?! _is _true
+				       _then # re-run the test to raise otherwise swallowed condition 
+					       a_test.perform( a_protectable , _self )
+				       _endif 
 				       _throw outer_tag
 			       _endif
 		       _endprotect

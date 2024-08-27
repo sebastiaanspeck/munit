@@ -414,7 +414,8 @@ _method test_suite.test_for_name(a_name)
 	## 
 	_for a_test _over _self.tests()
 	_loop
-		_if a_test.get_name() = a_name
+		_if a_test.get_name() = a_name _orif
+		    a_test.name = a_name
 		_then
 			_return a_test
 		_endif 
