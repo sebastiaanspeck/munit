@@ -176,6 +176,13 @@ _private _method test_case.set_full_name()
 	_then _return
 	_endif
 	
+	.full_name<< write_string(.name.default(""), _self.name_postfix())
+_endmethod
+$
+_pragma(classify_level=debug,topic=MUnit)
+_private _method test_case.name_postfix()
+	## 
+	## 
 	# extend test name with suffix -64bit if it runs on a 64bit
 	# database and with -32bit if it runs on a 32bit one
 	system64?<< _self.system64?
@@ -191,8 +198,7 @@ _private _method test_case.set_full_name()
 	_then
 		postfix +<< "-ignored"
 	_endif
-
-	.full_name<< write_string(.name.default(""), postfix)
+	>> postfix
 _endmethod
 $
 
@@ -228,13 +234,10 @@ _method test_case.run_bare()
 	## Runs the bare test sequence.
 	
 	ignored? << _self.ignore_test(.name)
-	_if _not ignored?
-	_then
-		_self.one_time_behaviour()
-	_endif
 	_protect
 		_if _not ignored?
 		_then
+			_self.one_time_behaviour()
 			_self.set_up()
 		_endif
 		_self.run_test()
@@ -249,7 +252,6 @@ _method test_case.run_bare()
 	_endprotect
 _endmethod
 $
-
 
 _pragma(classify_level=advanced,topic=MUnit, usage=subclassable)
 _method test_case.one_time_set_up()

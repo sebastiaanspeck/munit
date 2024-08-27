@@ -249,14 +249,9 @@ _method db_test_case.run_bare()
 	# setup_db() and teardown_db() this should be called in
 	# set_up(), tear_down() but this would require big refactoring
 	# (mainly in PNI tests)
-	_dynamic !msf_debug?!
-	_if _self.class_name.write_string.matches?("vmsql*")
-	_then
-		!msf_debug?! << _true
-	_endif
 	_self.stub_map_rendering_if_required()
 
-	ignored? << _self.ignore_test(_self.get_name())
+	ignored? << _self.ignore_test(_self.name)
 	_protect
 		_if _not ignored?
 		_then
@@ -267,6 +262,7 @@ _method db_test_case.run_bare()
 	
 		_self.run_test()
 	_protection
+		_self.set_full_name()
 		_if _not ignored?
 		_then
 			_self.tear_down()

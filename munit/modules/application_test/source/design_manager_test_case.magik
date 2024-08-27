@@ -356,6 +356,7 @@ _method design_manager_test_case.run_bare()
 		_self.setup_sub_design()
                 _self.run_test()
         _protection
+		_self.set_full_name()
                 _self.teardown_design()
 		_self.tear_down()
 		!notify_database_data_changes?! << old_value 
