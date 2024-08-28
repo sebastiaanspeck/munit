@@ -441,7 +441,8 @@ _private _method database_test.check_correct_database_open()
       _endif
       gis_program_manager.reinitialise()
       _self.prep_vmsql_db()
-      open_database({_self.database_path})
+      # open_database({_self.database_path})
+      open_database({"abcdefg"})
       _if interactive?
       _then 
         smallworld_product.set_startup_option(:interactive?, _true)
