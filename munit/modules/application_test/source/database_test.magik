@@ -422,33 +422,46 @@ _private _method database_test.check_correct_database_open()
 		gis_program_manager.ace_top_view.searchpath.at_using_default("", 1) <> _self.database_path _orif
 		ds_environment.concurrency_mode <> _self.concurrency_mode
 	_then 
-		# Suppress witterage
-		_handling information _with procedure 
-		_dynamic !output!
-    _self.suppress_witterage(!msf_debug?!)
-		# _if !msf_debug?! _isnt _true
-		# _then
-		# 	!output!<< internal_text_output_stream.new()
-		# _endif
+    error_tag << "error"
+    (cond, traceback_proc) << 
+    _catch error_tag
+    _handling error _with throw_proc_with_captured_traceback(error_tag)
+      # Suppress witterage
+      _handling information _with procedure 
+      _dynamic !output!
+      _self.suppress_witterage(!msf_debug?!)
+      # _if !msf_debug?! _isnt _true
+      # _then
+      # 	!output!<< internal_text_output_stream.new()
+      # _endif
 
-		ds_environment.concurrency_mode << _self.concurrency_mode
-		smallworld_product.set_startup_option(:authorisation, :singleuser)
-		smallworld_product.set_startup_option(:login, "root")
-		interactive?<< smallworld_product.get_option(:interactive?) _is _true 
-		_if interactive?
-		_then 
-			smallworld_product.set_startup_option(:interactive?, _false)
-		_endif
-		gis_program_manager.reinitialise()
-		_self.prep_vmsql_db()
-    _self.suppress_witterage(_false)
-    write("About to open database: ", _self.database_path)
-		open_database({_self.database_path})
-		_if interactive?
-		_then 
-			smallworld_product.set_startup_option(:interactive?, _true)
-		_endif
-		_self.database_opened? << _true
+      ds_environment.concurrency_mode << _self.concurrency_mode
+      smallworld_product.set_startup_option(:authorisation, :singleuser)
+      smallworld_product.set_startup_option(:login, "root")
+      interactive?<< smallworld_product.get_option(:interactive?) _is _true 
+      _if interactive?
+      _then 
+        smallworld_product.set_startup_option(:interactive?, _false)
+      _endif
+      gis_program_manager.reinitialise()
+      _self.prep_vmsql_db()
+      _self.suppress_witterage(_false)
+      write("About to open database: ", _self.database_path)
+      open_database({_self.database_path})
+      _if interactive?
+      _then 
+        smallworld_product.set_startup_option(:interactive?, _true)
+      _endif
+      _self.database_opened? << _true
+    _endcatch
+
+    _if cond _isnt _unset
+    _then
+      write("Error opening database: ", cond.report_contents_string)
+      traceback_proc()
+      _self.database_opened? << _false
+    _endif
+
 	_endif
 	_self.open_other_datasets()
 _endmethod
