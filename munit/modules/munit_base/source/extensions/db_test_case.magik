@@ -713,6 +713,7 @@ _method db_test_case.databases
 
 	_for name, a_view _over gis_program_manager.databases.fast_keys_and_elements()
 	_loop
+		_if _not a_view.vmds? _then _continue _endif 
 		views[name] << a_view
 	_endloop 
 
