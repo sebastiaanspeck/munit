@@ -35,21 +35,13 @@ def_slotted_exemplar( :database_test,
 $
 
 _pragma(classify_level=debug)
-database_test.define_shared_variable(:vmds_database_path,
+database_test.define_shared_variable(:database_path,
         ##
         ## The location of the cambridge_db to use.
         ##
-        "cbgsun11:/swdev/databases/dev_ds_500/ds/ds_admin", :public)
+        "cbgsun11:/swdev/databases/dev_ds_500_vmsql_test/ds/ds_admin", :public)
 $
 
-_pragma(classify_level=debug)
-database_test.define_shared_variable(:vmsql_database_path,
-        ##
-        ## The location of the cambridge_db to use for VMSQL.
-        ##
-	        "cbgsun11:/swdev/databases/dev_ds_500_vmsql/ds/ds_admin", :public)
-	
-$
 
 _pragma(classify_level=debug)
 database_test.define_shared_variable(:concurrency_mode,
@@ -73,7 +65,7 @@ _pragma(classify_level=debug)
 ## This shared constant indicates if the database should be
 ## closed.  If true, it is closed in the one_time_tear_down()
 ## method regardless whether it was opened by this test.
-database_test.define_shared_variable( :force_close?, _true, :private )
+database_test.define_shared_variable( :force_close?, _false, :private )
 $
 
 _pragma(classify_level=debug)
@@ -94,27 +86,6 @@ _method database_test.properties
 _endmethod
 $
 
-_pragma(classify_level=debug)
-_method database_test.database_path
-	## 
-	## Returns the database_path.  When database_storage_mode is :vmsql and a local
-	## database is open then the method returns the path of this database for use
-	## by vmsql.
-	##
-	_if _self.database_storage_mode _is :vmsql
-	_then
-		_if _self.is_vmds_database_local?
-		_then
-			# Developer mode, use the currently open db
-			_return gis_program_manager.ace_top_view.searchpath.at_using_default("", 1)
-		_else 
-			_return _self.vmsql_database_path
-		_endif
-	_else
-		_return _self.vmds_database_path
-	_endif
-_endmethod
-$
 
 
 _pragma(classify_level=debug, usage={subclassable})
@@ -366,12 +337,11 @@ _method database_test.one_time_tear_down()
         ## Subclass implemetations should always call _super.
 	##
 	_super.one_time_tear_down()
-	_self.one_time_tear_down_vmsql()
 	_if _self.database_opened? _orif
 	    _self.force_close?
 	_then 
 		_self.discard_clones()
-		gis_program_manager.reinitialise()
+		#gis_program_manager.reinitialise()
 	_endif
 _endmethod
 $
