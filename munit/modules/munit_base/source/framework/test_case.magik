@@ -168,9 +168,9 @@ _endmethod
 $
 
 _pragma(classify_level=debug,topic=MUnit)
-_private _method test_case.set_full_name()
+_method test_case.set_full_name()
 	## Sets .full_name see get_name() about how it is extended
-	##
+	## 
 
 	_if .full_name _isnt _unset 
 	_then _return
@@ -360,39 +360,39 @@ _endmethod
 $
 
 _pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
-_private _method test_case.ignore_test(test_name)
+_private _method test_case.ignore_test()
 	##
-	## Ignores TEST_NAME if it is configured to be ignored in self.ignored_tests. 
+	## Ignores test if it is configured to be ignored in self.ignored_tests. 
 	## Stubs the test_name method with one that simply outputs a message stating
 	## that the test is being ignored.  Returns true if the test was ignored, false
 	## otherwise.  TEST_NAME should be a symbol, e.g. :|test_something()|.
 	##
 	# TODO:  Tests ignored with this techique will not be picked up as ignored in
 	# the build system.  We need to get them added.
-	_if test_name _is _unset _orif _not _self.ignored_tests.includes?(test_name)
+	_if .name _is _unset _orif _not _self.ignored_tests.includes?(.name)
 	_then
 		_return _false
 	_endif
-	_self.int!ignore_test(test_name)
+	_self.int!ignore_test()
 	>> _true 
 _endmethod
 $
 _pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
-_method test_case.int!ignore_test(test_name)
+_method test_case.int!ignore_test()
 	## 
 	## 
 	# Test is not ignored
-	_if (method << _self.method(test_name)) _isnt _unset _andif 
+	_if (method << _self.method(.name)) _isnt _unset _andif 
 	    (v<< method.value) _isnt _unset _andif
 	    v.name _isnt :ignore_test
 	_then 
 		owning_class << method.owner.meta_at(:exemplar_global).value
-		_local msg << write_string("Test case ", _self.class_name," is ignoring ",test_name, " (defined in ",owning_class.class_name,")")
+		_local msg << write_string("Test case ", _self.class_name," is ignoring ",.name, " (defined in ",owning_class.class_name,")")
 		ignore_test_proc << _proc @ignore_test()
 					    _import msg
 					    write(msg)
 				    _endproc
-		stub_method_helper.replace_method(_self, test_name, ignore_test_proc)
+		stub_method_helper.replace_method(_self, .name, ignore_test_proc)
 	_endif 	
 _endmethod
 $
