@@ -444,7 +444,9 @@ _private _method database_test.check_correct_database_open()
 			smallworld_product.set_startup_option(:interactive?, _true)
 		_endif
 		
-		_if _self.database_opened? _is _false _andif !msf_debug?! _is _true
+		# Only log errors in this way if we are not in debugging mode.
+		# When !msf_debug?! is _true the errors should be logged to !terminal! anyway
+		_if _self.database_opened? _is _false _andif !msf_debug?! _is _false
 		_then
 			!terminal!.write(!output!.string)
 		_endif
