@@ -422,7 +422,6 @@ _private _method database_test.check_correct_database_open()
 		gis_program_manager.ace_top_view.searchpath.at_using_default("", 1) <> _self.database_path _orif
 		ds_environment.concurrency_mode <> _self.concurrency_mode
 	_then 
-    error_tag << "error"
 		# Suppress witterage
 		_handling information _with procedure 
 		_dynamic !output!
