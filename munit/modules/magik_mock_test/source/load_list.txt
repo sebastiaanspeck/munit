@@ -1,3 +1,4 @@
 mock_manager_test
 magik_mock_test_case
 stub_method_helper_test
+stub_proc_helper_test

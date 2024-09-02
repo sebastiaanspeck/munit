@@ -1,0 +1,152 @@
+#% text_encoding = iso8859_1
+_package sw
+
+_pragma(classify_level=debug, topic={MUnit})
+def_slotted_exemplar(:stub_proc_helper_test,
+	## 
+	## Test class for stub_proc_helper
+	## 
+	{},
+	{:test_case})
+$
+
+stub_proc_helper_test.define_shared_constant(:proc_name, :stub_proc_helper_dummy_proc, :private)
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.test_full_workflow()
+	##
+	## test full workflow
+	## test replace + restore
+	##
+	_self.then_procedure_returns(%D).
+		when_replace_procedure(:dummy_int).
+		then_procedure_returns(123).
+		when_replace_procedure(:dummy_float).
+		then_procedure_returns(4.0123).
+		when_restore_procedure().
+		then_procedure_returns(%D)
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.test_restore_all()
+	##
+	## test full workflow
+	## test replace + restore all
+	##
+	_self.then_procedure_returns(%D).
+		when_replace_procedure(:dummy_float).
+		then_procedure_returns(4.0123).
+		when_restore_all().
+		then_procedure_returns(%D)
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.test_error_raised_when_invalid_procedure()
+	##
+	## test error raised when passed in invalid procedure
+	##
+	_self.assert_raised_condition(
+		:invalid_procedure, 
+		stub_proc_helper, 
+		:|replace_procedure()|,
+		{:|sw:does_not_exists|, _proc() _endproc}
+	)
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.test_error_raised_when_invalid_restore()
+	##
+	## test error raised when restoring a procedure which has not been replaced yet
+	##
+	_self.assert_raised_condition(
+		:invalid_restore, 
+		stub_proc_helper, 
+		:|restore_stubbed_procedure()|,
+		{_self.proc_name}
+	)
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.when_replace_procedure(proc_key)
+	##
+	## replace `stub_proc_helper_dummy_proc` procedure
+	## PROC_KEY (:dummy_int or :dummy_float) controls what procedure to replace with
+	##
+	_local new_proc
+	_if proc_key = :dummy_int
+	_then
+		new_proc << _proc@dummy_int()
+				_return 123
+			_endproc
+	_elif proc_key = :dummy_float
+	_then
+		new_proc << _proc@dummy_float()
+				_return 4.0123
+			_endproc
+	_endif
+	stub_proc_helper.replace_procedure(_self.proc_name, new_proc)
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.when_restore_procedure()
+	##
+	## restore `stub_proc_helper_dummy_proc` original procedure
+	##
+	stub_proc_helper.restore_stubbed_procedure(_self.proc_name)
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.when_restore_all()
+	##
+	## restore all stored procedures
+	##
+	stub_proc_helper.restore_stubbed_procedures()
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.then_procedure_returns(expected)
+	##
+	## check if actual procedure output is equal to expected
+	##
+	proc << !current_package![_self.proc_name]
+	actual << proc()
+	_self.assert_equals(actual, expected)
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.set_up()
+    ##
+    ## set up method which is run before every test
+    ## defines a global procedure assigned under `!current_package!`
+    ##
+	_super.set_up()
+	dummy_char << _proc@dummy_char()
+			_return %D
+		_endproc
+	!current_package![_self.proc_name] << dummy_char
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper_test.tear_down()
+    ##
+    ## method that is run after every test executed
+    ## remove procedure definition
+    ##
+	_super.tear_down()
+	!current_package!.remove_key(_self.proc_name)
+_endmethod
+$

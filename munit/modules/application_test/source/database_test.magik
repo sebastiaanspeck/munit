@@ -28,31 +28,10 @@ _pragma(classify_level=debug)
 ## * dataset( ds_name ) - This returns the dataset identified by ds_name  
 ##
 def_slotted_exemplar( :database_test,
-        {
+	{
 		{ :properties,   _unset }
 	},
-        { :test_case, :database_system_test_mixin } )
-$
-
-
-_pragma(classify_level=advanced, usage={subclassable})
-## Can be set to :vmsql in order to create datasets in Postgres.
-database_test.define_shared_variable(:database_storage_mode, :vmds, :private)
-$
-
-_pragma(classify_level=advanced, usage={subclassable})
-## Controls whether the VMSQL dump is to be imported as part of the
-## one_time_set_up().  Ignored if import_vmsql_before_each_test? is true.  When
-## both import_vmsql_before_suite? and import_vmsql_before_each_test is set to
-## false then the dump will not be imported from Magik at all.
-database_test.define_shared_variable(:import_vmsql_before_suite?, _false, :private)
-$
-
-_pragma(classify_level=advanced, usage={subclassable})
-## When this is set to false the postgres dump will be loaded in
-## one_time_set_up.  When set to true the Postgres dump will be loaded before
-## each test, i.e. from the set_up.
-database_test.define_shared_variable(:import_vmsql_before_each_test?, _false, :private)
+        { :test_case, :database_system_test_mixin, :vmsql_database_test_helper } )
 $
 
 _pragma(classify_level=debug)
@@ -71,7 +50,6 @@ database_test.define_shared_variable(:vmsql_database_path,
 	        "cbgsun11:/swdev/databases/dev_ds_500_vmsql/ds/ds_admin", :public)
 	
 $
-
 
 _pragma(classify_level=debug)
 database_test.define_shared_variable(:concurrency_mode,
@@ -98,6 +76,11 @@ _pragma(classify_level=debug)
 database_test.define_shared_variable( :force_close?, _true, :private )
 $
 
+_pragma(classify_level=debug)
+## Cambridge_db dump file name
+database_test.define_shared_constant( :dump_file_name, "camdb_gis.dump", :private )
+$
+
 database_test.method_table.resolve_conflicts( :test_case )
 $
 
@@ -114,14 +97,22 @@ $
 _pragma(classify_level=debug)
 _method database_test.database_path
 	## 
+	## Returns the database_path.  When database_storage_mode is :vmsql and a local
+	## database is open then the method returns the path of this database for use
+	## by vmsql.
 	##
-
-	>> _if _self.database_storage_mode _is :vmsql
+	_if _self.database_storage_mode _is :vmsql
+	_then
+		_if _self.is_vmds_database_local?
 		_then
-			>> _self.vmsql_database_path
-		_else
-			>> _self.vmds_database_path
+			# Developer mode, use the currently open db
+			_return gis_program_manager.ace_top_view.searchpath.at_using_default("", 1)
+		_else 
+			_return _self.vmsql_database_path
 		_endif
+	_else
+		_return _self.vmds_database_path
+	_endif
 _endmethod
 $
 
@@ -135,10 +126,12 @@ _method database_test.writable_dataset_names
         >> {}
 _endmethod 
 $
+
 _pragma(classify_level=debug, usage={subclassable})
 ## nslots when opening world for dataset clone
 database_test.define_shared_variable(:clone_nslots, 1000, :public )
 $
+
 _pragma(classify_level=debug, usage={subclassable})
 _method database_test.dataset_clones
 	## Number of database clones on which test will run
@@ -160,6 +153,7 @@ _private _method database_test.dataset_clones?
 		_self.database_opened?
 _endmethod
 $
+
 _pragma(classify_level=restricted,topic=unit_testing)
 _private _method database_test.writable_dataset_clones?
 	## 
@@ -190,10 +184,23 @@ _private _method database_test.make_dataset_clones()
 			!error!<< !terminal!<< !output!<< internal_text_output_stream.new()
 			
 			_if (v<< _self.dataset(ds_name)) _is _unset _then _continue _endif
-			_self.clones[ds_name]<< simple_vector.new(_self.dataset_clones)			
+			_self.clones[ds_name]<< simple_vector.new(_self.dataset_clones)
+			cont<<0
 			_for i, a_world _over worlds.fast_keys_and_elements()
 			_loop
-				_self.clones[ds_name][i]<< clone<< gis_ds_view.new(:write, :searchpath, v.searchpath)
+				cont+<<1
+				_if v.vmds?
+				_then
+					_self.clones[ds_name][i]<< clone<< gis_ds_view.new(:write, :searchpath, v.searchpath)
+				_else
+					dataset_name << ds_name+:|_|+cont.write_string.as_symbol()
+					_self.clones[ds_name][i]<< clone<< gis_ds_view.new(:write,
+											   :concurrency_mode, :vmsql,
+											   :searchpath, v.searchpath,
+											   :name, dataset_name)
+					_self.import_vmsql_dump(dataset_name,_self.dump_file_name)
+				_endif
+
 				_for f _over v.files.fast_elements()
 				_loop
 					clone.add_file(f.name, :world, a_world )
@@ -209,7 +216,7 @@ $
 _pragma(classify_level=restricted,topic=unit_testing)
 _private _method database_test.given_writable_dataset_clones()
 	## 
-	## 
+	##
 	_if _not _self.writable_dataset_clones?	_then _return _endif
 	# Create a scratchpad for each dataset clone to hold any changes
 	_for ds_name _over _self.writable_dataset_names.fast_elements()
@@ -218,11 +225,23 @@ _private _method database_test.given_writable_dataset_clones()
 		_for i,clone _over clones.fast_keys_and_elements()
 		_loop
 			clone.goto_top_alternative(:readonly)
-			clone.create_scratchpad( write_string("memory::ds",i) )
+			_if clone.vmds?
+			_then
+				clone.create_scratchpad( write_string("memory::ds",i) )
+			_else
+				count << 1
+				_while clone.has_alternative?(count.write_string)
+				_loop
+					count +<<1
+				_endloop
+				clone.spawn(count.write_string)
+				clone.down(count.write_string,:write)
+			_endif
 		_endloop
 	_endloop	
 _endmethod
 $
+
 _pragma(classify_level=restricted,topic=unit_testing)
 _private _method database_test.close_dataset_clones()
 	## 
@@ -288,7 +307,6 @@ _method database_test.run_with_clones(ds_name, meth_name, _gather parameters)
 _endmethod
 $
 
-
 _pragma(classify_level=debug, usage={subclassable})
 _method database_test.other_dataset_names
         ##
@@ -307,8 +325,10 @@ _method database_test.one_time_set_up()
         ##
         ## Subclass implemetations should always call _super.
 	##
-        _super.one_time_set_up()
-        _self.check_correct_database_open()
+	_super.one_time_set_up()
+	.replaced_dataset_managers << property_list.new()
+	_self.check_correct_database_open()
+	_self.one_time_set_up_vmsql()
 	_self.make_dataset_clones()
 _endmethod
 $
@@ -345,7 +365,8 @@ _method database_test.one_time_tear_down()
 	##
         ## Subclass implemetations should always call _super.
 	##
-        _super.one_time_tear_down()
+	_super.one_time_tear_down()
+	_self.one_time_tear_down_vmsql()
 	_if _self.database_opened? _orif
 	    _self.force_close?
 	_then 
@@ -366,11 +387,12 @@ _method database_test.set_up()
 	##
         _super.set_up()
 	.properties << property_list.new()
-	_self.set_up_vmsql_db()
+	_self.set_up_vmsql()
 	_self.given_writable_datasets( _self.writable_dataset_names )
 	_self.given_writable_dataset_clones()
 _endmethod
 $
+
 _pragma(classify_level=debug)
 _method database_test.run_bare()
 	## 
@@ -379,7 +401,8 @@ _method database_test.run_bare()
 	# The Cambridge DB exemplars are declared in the user package,
 	# so this must be current when we open the database
 	#
-	_dynamic !current_package! << !current_package!.all_packages[:user]
+	_dynamic !current_package!
+	!current_package! << !current_package!.all_packages[:user]
 	_super.run_bare()
 _endmethod
 $
@@ -416,7 +439,7 @@ _private _method database_test.check_correct_database_open()
 			smallworld_product.set_startup_option(:interactive?, _false)
 		_endif
 		gis_program_manager.reinitialise()
-		_self.prep_vmsql_db(:gis)
+		_self.prep_vmsql_db()
 		open_database({_self.database_path})
 		_if interactive?
 		_then 
@@ -469,79 +492,6 @@ _private _method database_test.wait_for_threads_to_finish( task_owner )
 		_thisthread.sleep( 1000 )
 	_endloop 
 	
-_endmethod
-$
-
-_private _method database_test.set_up_vmsql_db()
-	##
-	## Called from set_up() to import VMSQL db when appropriate.
-	##
-	_if _self.database_storage_mode _is :vmsql _andif 
-		_self.import_vmsql_before_each_test? _is _true
-	_then
-		_for soc _over gis_program_manager.spatial_object_controllers()
-		_loop
-			_for dsm _over soc.dataset_managers()
-			_loop
-				_if dsm.is_kind_of?(vmsql_manager_mixin) _andif dsm.dataset_open?()
-				_then
-					dsm.close()
-					_self.import_vmsql_dump(dsm.name)	
-					dsm.open(dsm.get_connect_spec())
-				_endif
-			_endloop
-		_endloop
-	_endif
-_endmethod
-$
-
-_private _method database_test.prep_vmsql_db(dataset_name)
-	##
-	## Check the VMSQL database before opening the database.  Called from
-	## one_time_set_up before we do open_database.
-	##
-	_if _self.database_storage_mode _isnt :vmsql _orif
-		_self.import_vmsql_before_suite? _isnt _true
-	_then
-		_return
-	_endif
-	_self.import_vmsql_dump(dataset_name)
-_endmethod
-$
-
-
-_private _method database_test.import_vmsql_dump(dataset_name)
-	##
-	## Import a a dump file named camdb_DATASET_NAME.dump from the 
-	##
-	_self.recreate_vmsql_database(dataset_name)
-	pghost << system.getenv("SW_PGHOST")
-	pgdb << dataset_name.write_string
-	container_name << write_string("pg-", system.getenv("SW_PGPORT"))
-	cmd << rope.new()
-	cmd.add_last(_self.ant_executable)
-	cmd.add_last("-f")
-	cmd.add_last(_self.vmsql_ant_build_xml)
-	cmd.add_last(write_string("-D", "sw.pghost=", pghost))
-	cmd.add_last(write_string("-D", "postgres.container=", container_name))
-	cmd.add_last(write_string("-D", "postgres.database=", pgdb))
-	cmd.add_last(write_string("-D", "dumpfile=", "camdb_", pgdb.lowercase, ".dump"))
-	cmd.add_last("import-vmsql-dump")
-	system.do_command(cmd.join_as_strings(" "))
-_endmethod
-$
-
-_private _method database_test.vmsql_ant_build_xml
-	##
-	## Import a a dump file named camdb_DATASET_NAME.dump from the 
-	##
-	product_path << sw_module_manager.module(_self.module_name).product.directory
-	ant_build_file << system.canonicalise(system.pathname_down(product_path, "..", "..", "..", "build_tools", "ant", "vmds_cloud_common.xml"))
-	_if _not system.file_exists?(ant_build_file)
-	_then
-		condition.raise(:warning, :string, write_string("ANT build file does not exist: ", ant_build_file))
-	_endif
-	_return ant_build_file
 _endmethod
 $
 
