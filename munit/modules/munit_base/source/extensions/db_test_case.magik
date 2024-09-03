@@ -748,6 +748,7 @@ _private _method db_test_case.check_for_in_memory_database()
 	    (v << .ds_views.an_element()) _isnt _unset _andif
 	    v.searchpath[1].index_of_seq("memory::") _isnt 1
 	_then
+		write("XXX ",v)
 		condition.raise(:munit_db_not_in_memory)
 	_endif
 _endmethod
