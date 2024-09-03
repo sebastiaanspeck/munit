@@ -697,6 +697,8 @@ _method db_test_case.databases
 	## want only views which are both registered and appear in
 	## ds_environment.views.
 
+
+	write("YYYY ",_self,tab_char,.ds_views)
 	# Cache a collection to hold the views we find
 	_if (views << .ds_views) _is _unset _then views << .ds_views << property_list.new() _endif
 
@@ -707,12 +709,14 @@ _method db_test_case.databases
 		_if gis_program_manager.ace_top_view _is _unset
 		_then
 			gis_program_manager.reinitialise()
-		_endif 
+		_endif
+		write("YYYY2 ",_self,tab_char,gis_program_manager.ace_top_view)
 		_return views
 	_endif
 
 	_for name, a_view _over gis_program_manager.databases.fast_keys_and_elements()
 	_loop
+		write("YYYY3 ",a_view)
 		_if a_view.responds_to?(:vmds?) _andif  _not a_view.vmds? _then _continue _endif 
 		views[name] << a_view
 	_endloop 
