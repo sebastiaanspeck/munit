@@ -698,7 +698,6 @@ _method db_test_case.databases
 	## ds_environment.views.
 
 
-	write("YYYY ",_self,tab_char,.ds_views)
 	# Cache a collection to hold the views we find
 	_if (views << .ds_views) _is _unset _then views << .ds_views << property_list.new() _endif
 
@@ -710,13 +709,11 @@ _method db_test_case.databases
 		_then
 			gis_program_manager.reinitialise()
 		_endif
-		write("YYYY2 ",_self,tab_char,gis_program_manager.ace_top_view)
 		_return views
 	_endif
 
 	_for name, a_view _over gis_program_manager.databases.fast_keys_and_elements()
 	_loop
-		write("YYYY3 ",a_view)
 		_if a_view.responds_to?(:vmds?) _andif  _not a_view.vmds? _then _continue _endif 
 		views[name] << a_view
 	_endloop 
@@ -747,12 +744,11 @@ _private _method db_test_case.check_for_in_memory_database()
 	## If the test declares that it wants an in-memory database but
 	## the searchpath doesn't start with "memory::" then raise a
 	## :munit_db_not_in_memory condition.
-	
+
 	_if _self.in_memory_only? _andif
 	    (v << .ds_views.an_element()) _isnt _unset _andif
 	    v.searchpath[1].index_of_seq("memory::") _isnt 1
 	_then
-		write("XXX ",v,tab_char,v.searchpath[1],tab_char,_self,tab_char,_self.in_memory_only?)
 		condition.raise(:munit_db_not_in_memory)
 	_endif
 _endmethod
