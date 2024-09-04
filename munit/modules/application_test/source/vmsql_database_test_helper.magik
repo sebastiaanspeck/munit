@@ -8,7 +8,6 @@ _pragma(classify_level=debug)
 ##
 def_slotted_exemplar(:vmsql_database_test_helper,
 	{
-		{:replaced_dataset_managers, _unset}
 	})
 $
 
@@ -65,6 +64,37 @@ vmsql_database_test_helper.define_shared_variable(:vmds_vmsql_dataset_map,
 	property_list.new_with(:gis,:gis_pg,:electricity,:electricity_pg), :private)
 $
 
+
+
+_pragma(classify_level=basic,topic=MUnit,usage=subclassable)
+_method vmsql_database_test_helper.add_vmsql_dataset_to_soc(dataset_name)
+	## Add vmsql datasets to soc
+	##
+	soc_name << soc_name.default(:gis)
+	vmsql_dsm << vmsql_manager.new(dataset_name)
+	ace_top << gis_program_manager.ace_top_view
+	ace_top.switch(:write)
+	vmsql_dsm.store_connect_spec(vmsql_manager.default_connect_specification)
+	a_soc << gis_program_manager.spatial_object_controller(soc_name)
+	cspec << vmsql_dsm.get_connect_spec()
+	
+	a_soc.add_dataset_manager( vmsql_dsm )
+	gis_program_manager.add_dataset(soc_name, dataset_name, :vmsql_manager)
+	ace_top.commit()
+	ace_top.switch(:readonly)
+
+
+	_if _self.vmsql_dataset_can_be_opened?(dataset_name)
+	_then
+		vmsql_dsm.open(cspec)
+	_else
+		_self.import_vmsql_dataset(vmsql_dsm)
+	_endif
+
+_endmethod
+$
+
+
 _private _method vmsql_database_test_helper.prep_vmsql_db()
 	##
 	## Prepares a VMSQL database to be opened by open_database().  Called
@@ -77,13 +107,12 @@ _private _method vmsql_database_test_helper.prep_vmsql_db()
 	_then
 		_return
 	_endif
+
 	_for dataset_name _over _self.vmsql_datasets.fast_elements()
 	_loop
-		write(dataset_name)
-		_if _not _self.vmsql_dataset_can_be_opened?(dataset_name)
+		_if gis_program_manager.cached_dataset(dataset_name) _is _unset 
 		_then
-			write("import")
-			_self.import_vmsql_dump(dataset_name)
+			_self.add_vmsql_dataset_to_soc(dataset_name)
 		_endif
 	_endloop
 _endmethod
@@ -126,7 +155,6 @@ _private _method vmsql_database_test_helper.one_time_set_up_vmsql()
 	## machine, then datasets specified in vmsql_datasets will be replaced with
 	## equivalent vmsql datasets.  Changes are undone by one_time_tear_down_vmsql().
 	## 
-	.replaced_dataset_managers << property_list.new()
 	_if _self.database_storage_mode _isnt :vmsql
 	_then
 		_return

@@ -39,7 +39,7 @@ database_test.define_shared_variable(:database_path,
         ##
         ## The location of the cambridge_db to use.
         ##
-        "cbgsun11:/swdev/databases/dev_ds_500_vmsql_test/ds/ds_admin", :public)
+        "su_file::../../../cambridge_db/cambridge_db/ds/ds_admin", :public)
 $
 
 
@@ -297,7 +297,6 @@ _method database_test.one_time_set_up()
         ## Subclass implemetations should always call _super.
 	##
 	_super.one_time_set_up()
-	.replaced_dataset_managers << property_list.new()
 	_self.check_correct_database_open()
 	_self.one_time_set_up_vmsql()
 	_self.make_dataset_clones()
@@ -409,8 +408,9 @@ _private _method database_test.check_correct_database_open()
 			smallworld_product.set_startup_option(:interactive?, _false)
 		_endif
 		gis_program_manager.reinitialise()
-		_self.prep_vmsql_db()
+		
 		open_database({_self.database_path})
+		_self.prep_vmsql_db()
 		_if interactive?
 		_then 
 			smallworld_product.set_startup_option(:interactive?, _true)
