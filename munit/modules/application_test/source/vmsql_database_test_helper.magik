@@ -431,3 +431,18 @@ _private _method vmsql_database_test_helper.replace_vmds_dataset_with_vmsql(data
 	_return vmsql_dsm
 _endmethod
 $
+
+_method vmsql_database_test_helper.suppress_witterage(suppress?)
+	##
+	## Method to toggle witterage suppression
+	## suppress? should be a boolean indicating whether to suppress or not.
+	##
+	_if suppress? _is _true
+	_then
+		output << internal_text_output_stream.new()
+	_else
+		output << !output!
+	_endif
+	>> output
+_endmethod
+$
