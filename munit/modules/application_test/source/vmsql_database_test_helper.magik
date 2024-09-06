@@ -165,10 +165,8 @@ $
 _private _method vmsql_database_test_helper.one_time_set_up_vmsql()
 	##
 	## Gets called from one_time_set_up() to do one-time setup for VMSQL suites.
-	## If the session has a local database open, i.e. hosted on the current
-	## machine, then datasets specified in vmsql_datasets will be replaced with
-	## equivalent vmsql datasets.  Changes are undone by one_time_tear_down_vmsql().
-	## 
+	## Imports the dump if import_vmsql_before_suite? = true
+
 	_if _self.database_storage_mode _isnt :vmsql
 	_then
 		_return
@@ -176,9 +174,9 @@ _private _method vmsql_database_test_helper.one_time_set_up_vmsql()
 
 	_for dataset_name _over _self.vmsql_datasets.fast_elements()
 	_loop
-		_if (dsm << _self.dataset_manager(dataset_name)) _isnt _unset 
+		_if (vmsql_dsm << _self.dataset_manager(dataset_name)) _isnt _unset 
 		_then
-			_if dsm.is_kind_of?(vmsql_manager_mixin) _andif
+			_if vmsql_dsm.is_kind_of?(vmsql_manager_mixin) _andif
 			    _self.import_vmsql_before_suite? _is _true _andif
 			    _self.import_vmsql_before_each_test? _isnt _true
 			_then
