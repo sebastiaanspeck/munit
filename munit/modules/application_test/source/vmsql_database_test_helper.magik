@@ -94,6 +94,20 @@ _method vmsql_database_test_helper.add_vmsql_dataset_to_soc(dataset_name)
 _endmethod
 $
 
+_method vmsql_database_test_helper.suppress_witterage(suppress?)
+	##
+	## Method to toggle witterage suppression
+	## suppress? should be a boolean indicating whether to suppress or not.
+	##
+	_if suppress? _is _true
+	_then
+		output << internal_text_output_stream.new()
+	_else
+		output << !output!
+	_endif
+	>> output
+_endmethod
+$
 
 _private _method vmsql_database_test_helper.prep_vmsql_db()
 	##

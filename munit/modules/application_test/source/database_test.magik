@@ -394,10 +394,7 @@ _private _method database_test.check_correct_database_open()
 		# Suppress witterage
 		_handling information _with procedure 
 		_dynamic !output!
-		_if !msf_debug?! _isnt _true
-		_then
-			!output!<< internal_text_output_stream.new()
-		_endif
+		!output! << _self.suppress_witterage(_not !msf_debug?!)
 
 		ds_environment.concurrency_mode << _self.concurrency_mode
 		smallworld_product.set_startup_option(:authorisation, :singleuser)
@@ -409,13 +406,19 @@ _private _method database_test.check_correct_database_open()
 		_endif
 		gis_program_manager.reinitialise()
 		
-		open_database({_self.database_path})
+		_self.database_opened? << open_database({_self.database_path})
+
 		_self.prep_vmsql_db()
 		_if interactive?
 		_then 
 			smallworld_product.set_startup_option(:interactive?, _true)
 		_endif
-		_self.database_opened? << _true
+		# Only log errors in this way if we are not in debugging mode.
+		# When !msf_debug?! is _true the errors should be logged to !terminal! anyway
+		_if _self.database_opened? _is _false _andif !msf_debug?! _isnt _true
+		_then
+			!terminal!.write(!output!.string)
+		_endif
 	_endif
 	_self.open_other_datasets()
 _endmethod
