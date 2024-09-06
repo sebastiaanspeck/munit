@@ -697,7 +697,6 @@ _method db_test_case.databases
 	## want only views which are both registered and appear in
 	## ds_environment.views.
 
-
 	# Cache a collection to hold the views we find
 	_if (views << .ds_views) _is _unset _then views << .ds_views << property_list.new() _endif
 
@@ -708,7 +707,7 @@ _method db_test_case.databases
 		_if gis_program_manager.ace_top_view _is _unset
 		_then
 			gis_program_manager.reinitialise()
-		_endif
+		_endif 
 		_return views
 	_endif
 
@@ -743,7 +742,7 @@ _private _method db_test_case.check_for_in_memory_database()
 	## If the test declares that it wants an in-memory database but
 	## the searchpath doesn't start with "memory::" then raise a
 	## :munit_db_not_in_memory condition.
-
+	
 	_if _self.in_memory_only? _andif
 	    (v << .ds_views.an_element()) _isnt _unset _andif
 	    v.searchpath[1].index_of_seq("memory::") _isnt 1
