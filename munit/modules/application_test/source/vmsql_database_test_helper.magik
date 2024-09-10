@@ -46,45 +46,38 @@ vmsql_database_test_helper.define_shared_variable(:vmsql_dump_file_name,
 	, :private)
 $
 
-
 _pragma(classify_level=advanced, usage={subclassable})
-vmsql_database_test_helper.define_shared_variable(:vmsql_datasets,
+vmsql_database_test_helper.define_shared_variable(:vmsql_soc_name,
 	##
-	## Specifies the names of datasets which the suite requires to be vmsql
-	## datasets.  If dataset managers exist with these names but are not vmsql,
-	## then they will be replaced with vmsql datasets.
-	##
-	{:gis_pg,:electricity_pg}, :private)
+	## Specifies the name of the soc used to add vmsql dataset
+	:gis, :private)
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
 vmsql_database_test_helper.define_shared_variable(:vmds_vmsql_dataset_map,
-	##
-	##
+	## to map vmds datasets to vmsql "version" of those datasets
 	property_list.new_with(:gis,:gis_pg,:electricity,:electricity_pg), :private)
 $
 
-
-
 _pragma(classify_level=basic,topic=MUnit,usage=subclassable)
-_method vmsql_database_test_helper.add_vmsql_dataset_to_soc(dataset_name)
-	## Add vmsql datasets to soc
+_method vmsql_database_test_helper.add_vmsql_dataset_to_soc(vmsql_dataset_name)
+	## Add vmsql datasets to soc and import the dump if necessary
 	##
-	soc_name << soc_name.default(:gis)
-	vmsql_dsm << vmsql_manager.new(dataset_name)
+	a_soc << gis_program_manager.spatial_object_controller(_self.vmsql_soc_name)
+	
+	vmsql_dsm << vmsql_manager.new(vmsql_dataset_name)
 	ace_top << gis_program_manager.ace_top_view
 	ace_top.switch(:write)
 	vmsql_dsm.store_connect_spec(vmsql_manager.default_connect_specification)
-	a_soc << gis_program_manager.spatial_object_controller(soc_name)
+
 	cspec << vmsql_dsm.get_connect_spec()
 	
 	a_soc.add_dataset_manager( vmsql_dsm )
-	gis_program_manager.add_dataset(soc_name, dataset_name, :vmsql_manager)
+	gis_program_manager.add_dataset(_self.vmsql_soc_name, vmsql_dataset_name, :vmsql_manager)
 	ace_top.commit()
 	ace_top.switch(:readonly)
 
-
-	_if _self.vmsql_dataset_can_be_opened?(dataset_name)
+	_if _self.vmsql_dataset_can_be_opened?(vmsql_dataset_name)
 	_then
 		vmsql_dsm.open(cspec)
 	_else
@@ -122,11 +115,11 @@ _private _method vmsql_database_test_helper.prep_vmsql_db()
 		_return
 	_endif
 
-	_for dataset_name _over _self.vmsql_datasets.fast_elements()
+	_for vmsql_dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 	_loop
-		_if gis_program_manager.cached_dataset(dataset_name) _is _unset 
+		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset 
 		_then
-			_self.add_vmsql_dataset_to_soc(dataset_name)
+			_self.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 		_endif
 	_endloop
 _endmethod
@@ -172,7 +165,7 @@ _private _method vmsql_database_test_helper.one_time_set_up_vmsql()
 		_return
 	_endif
 
-	_for dataset_name _over _self.vmsql_datasets.fast_elements()
+	_for dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 	_loop
 		_if (vmsql_dsm << _self.dataset_manager(dataset_name)) _isnt _unset 
 		_then
@@ -187,7 +180,6 @@ _private _method vmsql_database_test_helper.one_time_set_up_vmsql()
 _endmethod
 $
 
-
 _private _method vmsql_database_test_helper.set_up_vmsql()
 	##
 	## Called from set_up() to import VMSQL db when appropriate.
@@ -195,7 +187,7 @@ _private _method vmsql_database_test_helper.set_up_vmsql()
 	_if _self.database_storage_mode _is :vmsql _andif
 		_self.import_vmsql_before_each_test? _is _true
 	_then
-		_for dataset_name _over _self.vmsql_datasets.fast_elements()
+		_for dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 		_loop
 			_if (dsm << _self.dataset_manager(dataset_name)) _isnt _unset _andif 
 				dsm.is_kind_of?(vmsql_manager_mixin)
@@ -226,21 +218,6 @@ _private _method vmsql_database_test_helper.import_vmsql_dataset(dataset_manager
 	dataset_manager.open(dataset_manager.get_connect_spec())
 _endmethod
 $
-
-#_method vmsql_database_test_helper.ace_before_checkpoint_name
-#	##
-#	## Returns a name for the checkpoint created in the ACE Top.
-#	##
-#	postfix << "_bef"
-#	name << write_string(_self.class_name, postfix)
-#	_if name.size > 32
-#	_then
-#		name << write_string(_self.class_name.write_string.subseq(1, 32-postfix.size), postfix)
-#	_endif
-#	_return name
-#_endmethod
-#$
-
 
 _private _method vmsql_database_test_helper.import_vmsql_dump(dataset_name, _optional dump_file)
 	##
@@ -392,4 +369,17 @@ _private _method vmsql_database_test_helper.dataset_manager(name)
 _endmethod
 $
 
-
+_method vmsql_database_test_helper.suppress_witterage(suppress?)
+	##
+	## Method to toggle witterage suppression
+	## suppress? should be a boolean indicating whether to suppress or not.
+	##
+	_if suppress? _is _true
+	_then
+		output << internal_text_output_stream.new()
+	_else
+		output << !output!
+	_endif
+	>> output
+_endmethod
+$

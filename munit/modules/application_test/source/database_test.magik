@@ -65,7 +65,7 @@ _pragma(classify_level=debug)
 ## This shared constant indicates if the database should be
 ## closed.  If true, it is closed in the one_time_tear_down()
 ## method regardless whether it was opened by this test.
-database_test.define_shared_variable( :force_close?, _true , :private )
+database_test.define_shared_variable( :force_close?, _true, :private )
 $
 
 _pragma(classify_level=debug)

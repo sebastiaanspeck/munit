@@ -66,7 +66,7 @@ _private _method database_system_test_mixin.dataset( ds_name )
 	##
 	## Returns the dataset named DS_NAME
 	##
-	_if _self.database_storage_mode _is :vmsql
+	_if _self.responds_to?(:database_storage_mode) _andif _self.database_storage_mode _is :vmsql
 	_then
 		ds_name << _self.vmds_vmsql_dataset_map[ds_name].default(ds_name)
 	_endif
