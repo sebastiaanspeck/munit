@@ -8,7 +8,6 @@ _pragma(classify_level=debug)
 ##
 def_slotted_exemplar(:vmsql_database_test_helper,
 	{
-		{:replaced_dataset_managers, _unset}
 	})
 $
 
@@ -26,7 +25,7 @@ vmsql_database_test_helper.define_shared_variable(:import_vmsql_before_suite?,
 	## one_time_set_up().  Ignored if import_vmsql_before_each_test? is true.  When
 	## both import_vmsql_before_suite? and import_vmsql_before_each_test is set to
 	## false then the dump will not be imported from Magik at all.
-	_true, :private)
+	_false, :private)
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
@@ -42,17 +41,65 @@ vmsql_database_test_helper.define_shared_variable(:vmsql_dump_file_name,
 	## Property list used to specify dump file names for one or more of the
 	## vmsql_datasets. If this is not specified then the file name will default to
 	## camdb_<dataset name>.dump.
-	property_list, :private)
+	property_list.new_with(:gis_pg,"camdb_gis.dump",
+			       :electricity_pg,"camdb_electricity.dump")
+	, :private)
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
-vmsql_database_test_helper.define_shared_variable(:vmsql_datasets,
+vmsql_database_test_helper.define_shared_variable(:vmsql_soc_name,
 	##
-	## Specifies the names of datasets which the suite requires to be vmsql
-	## datasets.  If dataset managers exist with these names but are not vmsql,
-	## then they will be replaced with vmsql datasets.
+	## Specifies the name of the soc used to add vmsql dataset
+	:gis, :private)
+$
+
+_pragma(classify_level=advanced, usage={subclassable})
+vmsql_database_test_helper.define_shared_variable(:vmds_vmsql_dataset_map,
+	## to map vmds datasets to vmsql "version" of those datasets
+	property_list.new_with(:gis,:gis_pg,:electricity,:electricity_pg), :private)
+$
+
+_pragma(classify_level=basic,topic=MUnit,usage=subclassable)
+_method vmsql_database_test_helper.add_vmsql_dataset_to_soc(vmsql_dataset_name)
+	## Add vmsql datasets to soc and import the dump if necessary
 	##
-	{:gis}, :private)
+	a_soc << gis_program_manager.spatial_object_controller(_self.vmsql_soc_name)
+	
+	vmsql_dsm << vmsql_manager.new(vmsql_dataset_name)
+	ace_top << gis_program_manager.ace_top_view
+	ace_top.switch(:write)
+	vmsql_dsm.store_connect_spec(vmsql_manager.default_connect_specification)
+
+	cspec << vmsql_dsm.get_connect_spec()
+	
+	a_soc.add_dataset_manager( vmsql_dsm )
+	gis_program_manager.add_dataset(_self.vmsql_soc_name, vmsql_dataset_name, :vmsql_manager)
+	ace_top.commit()
+	ace_top.switch(:readonly)
+
+	_if _self.vmsql_dataset_can_be_opened?(vmsql_dataset_name)
+	_then
+		vmsql_dsm.open(cspec)
+	_else
+		_self.import_vmsql_dataset(vmsql_dsm)
+	_endif
+
+_endmethod
+$
+
+_method vmsql_database_test_helper.suppress_witterage(suppress?)
+	##
+	## Method to toggle witterage suppression
+	## suppress? should be a boolean indicating whether to suppress or not.
+	##
+	_if suppress? _is _true
+	_then
+		output << internal_text_output_stream.new()
+	_else
+		output << !output!
+	_endif
+	>> output
+_endmethod
 $
 
 _private _method vmsql_database_test_helper.prep_vmsql_db()
@@ -67,11 +114,12 @@ _private _method vmsql_database_test_helper.prep_vmsql_db()
 	_then
 		_return
 	_endif
-	_for dataset_name _over _self.vmsql_datasets.fast_elements()
+
+	_for vmsql_dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 	_loop
-		_if _not _self.vmsql_dataset_can_be_opened?(dataset_name)
+		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset 
 		_then
-			_self.import_vmsql_dump(dataset_name)
+			_self.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 		_endif
 	_endloop
 _endmethod
@@ -87,9 +135,12 @@ _private _method vmsql_database_test_helper.vmsql_dataset_can_be_opened?(dataset
 	# Creates a database_view, adds dd.ds and checks whether sw_gis!world exists.
 	can_open? << _false
 	_try _with cond
-		view << database_view.new(:readonly, :searchpath, {write_string("/",dataset_name)}, :concurrency_mode, :vmsql)
+		view << database_view.new(:readonly,
+					  :name,dataset_name,
+					  :searchpath, {write_string("/",dataset_name)},
+					  :concurrency_mode, :vmsql)
 		_protect
-			view.add_file("dd.ds", :mode, :dontcare)
+			view.add_file("gdb.ds", :mode, :dontcare)
 			_if view.collections.includes_key?(:sw_gis!world)
 			_then
 				can_open? << _true
@@ -107,68 +158,24 @@ $
 _private _method vmsql_database_test_helper.one_time_set_up_vmsql()
 	##
 	## Gets called from one_time_set_up() to do one-time setup for VMSQL suites.
-	## If the session has a local database open, i.e. hosted on the current
-	## machine, then datasets specified in vmsql_datasets will be replaced with
-	## equivalent vmsql datasets.  Changes are undone by one_time_tear_down_vmsql().
-	## 
-	.replaced_dataset_managers << property_list.new()
+	## Imports the dump if import_vmsql_before_suite? = true
+
 	_if _self.database_storage_mode _isnt :vmsql
 	_then
 		_return
 	_endif
 
-	_for dataset_name _over _self.vmsql_datasets.fast_elements()
+	_for dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 	_loop
-		_if (dsm << _self.dataset_manager(dataset_name)) _isnt _unset 
+		_if (vmsql_dsm << _self.dataset_manager(dataset_name)) _isnt _unset 
 		_then
-			vmsql_dsm << _unset
-			_if _not dsm.is_kind_of?(vmsql_manager_mixin) _andif
-				_self.is_vmds_database_local? # Dev mode - replace
-			_then
-				vmsql_dsm << _self.replace_vmds_dataset_with_vmsql(dsm)
-			_elif dsm.is_kind_of?(vmsql_manager_mixin) _andif
-				_self.import_vmsql_before_suite? _is _true _andif
-				_self.import_vmsql_before_each_test? _isnt _true
-			_then
-				vmsql_dsm << dsm
-			_endif
-			_if vmsql_dsm _isnt _unset
+			_if vmsql_dsm.is_kind_of?(vmsql_manager_mixin) _andif
+			    _self.import_vmsql_before_suite? _is _true _andif
+			    _self.import_vmsql_before_each_test? _isnt _true
 			_then
 				_self.import_vmsql_dataset(vmsql_dsm)
 			_endif
 		_endif
-	_endloop
-_endmethod
-$
-
-_method vmsql_database_test_helper.one_time_tear_down_vmsql()
-	##
-	## Called by one_time_tear_down().  If vmds datases were replaced with vmsql
-	## then they are restored.
-	##
-	_if _self.database_storage_mode _isnt :vmsql _orif
-		gis_program_manager.ace_top_view _is _unset _orif
-		_not gis_program_manager.ace_top_view.has_checkpoint?(_self.ace_before_checkpoint_name)
-	_then
-		_return
-	_endif
-	_for name, vmds_dsm _over .replaced_dataset_managers.fast_keys_and_elements()
-	_loop
-		vmsql_dsm << vmds_dsm.parent_soc.dataset_managers[name]
-		_if (vmsql_dsm.dataset_open?())
-		_then
-			write("Closing ", vmsql_dsm.name)
-			vmsql_dsm.close()
-		_endif
-	_endloop
-	gis_program_manager.ace_top_view.go_to_checkpoint(_self.ace_before_checkpoint_name, :write, _true)
-	gis_program_manager.ace_top_view.remove_checkpoint(_self.ace_before_checkpoint_name)
-	gis_program_manager.ace_top_view.switch(:readonly)
-	_for name, vmds_dsm _over .replaced_dataset_managers.keys_and_elements()
-	_loop
-		vmds_dsm.parent_soc.dataset_managers[name] << vmds_dsm
-		vmds_dsm.open(vmds_dsm.get_connect_spec())
-		.replaced_dataset_managers.remove_key(name)
 	_endloop
 _endmethod
 $
@@ -180,7 +187,7 @@ _private _method vmsql_database_test_helper.set_up_vmsql()
 	_if _self.database_storage_mode _is :vmsql _andif
 		_self.import_vmsql_before_each_test? _is _true
 	_then
-		_for dataset_name _over _self.vmsql_datasets.fast_elements()
+		_for dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 		_loop
 			_if (dsm << _self.dataset_manager(dataset_name)) _isnt _unset _andif 
 				dsm.is_kind_of?(vmsql_manager_mixin)
@@ -212,38 +219,14 @@ _private _method vmsql_database_test_helper.import_vmsql_dataset(dataset_manager
 _endmethod
 $
 
-_method vmsql_database_test_helper.ace_before_checkpoint_name
-	##
-	## Returns a name for the checkpoint created in the ACE Top.
-	##
-	postfix << "_bef"
-	name << write_string(_self.class_name, postfix)
-	_if name.size > 32
-	_then
-		name << write_string(_self.class_name.write_string.subseq(1, 32-postfix.size), postfix)
-	_endif
-	_return name
-_endmethod
-$
-
-_private _method vmsql_database_test_helper.vmsql_dump_file_name(dataset_name)
-	##
-	## Returns the dump file name for the specified dataset.
-	##
-	_return write_string("camdb_", dataset_name.write_string.lowercase, ".dump")
-_endmethod
-$
-
 _private _method vmsql_database_test_helper.import_vmsql_dump(dataset_name, _optional dump_file)
 	##
 	## Imports the dump into postgres for the specified dataset.  If the Postgres
 	## commandline utility psql is available on this machine then that is used,
 	## otherwise we use an ant target.
 	##
-	_if (file << dump_file.default(_self.vmsql_dump_file_name[dataset_name])) _is _unset
-	_then
-		file << _self.vmsql_dump_file_name(dataset_name)
-	_endif
+	file << dump_file.default(_self.vmsql_dump_file_name[dataset_name])
+	
 	_if _self.is_psql_available?
 	_then
 		_try _with cond
@@ -258,27 +241,6 @@ _private _method vmsql_database_test_helper.import_vmsql_dump(dataset_name, _opt
 _endmethod
 $
 
-_method vmsql_database_test_helper.is_vmds_database_local?
-	##
-	## Returns true if the database that we have open is hosted on the same machine
-	## as where our session is running.  This is used by VMSQL set-ups to enable
-	## developer mode and replace vmds datasets with vmsql when running
-	## database_tests locally.
-	#
-	_if (ace_top << gis_program_manager.ace_top_view) _isnt _unset
-	_then
-		prefix_delimiter << "::"
-		path << ace_top.searchpath.at_using_default("", 1)
-		_if (index << path.index_of_seq(prefix_delimiter)) _isnt _unset 
-		_then
-			# Remove prefix
-			path << path.subseq(index+prefix_delimiter.size)
-		_endif
-		_return system.file_exists?(path)
-	_endif 
-	_return _false
-_endmethod
-$
 
 _private _method vmsql_database_test_helper.is_psql_available?
 	##
@@ -407,28 +369,18 @@ _private _method vmsql_database_test_helper.dataset_manager(name)
 _endmethod
 $
 
-_private _method vmsql_database_test_helper.replace_vmds_dataset_with_vmsql(dataset_manager)
-	parent_soc << dataset_manager.parent_soc
-	ace_top << gis_program_manager.ace_top_view
-	_if _not ace_top.has_checkpoint?(_self.ace_before_checkpoint_name)
+_method vmsql_database_test_helper.suppress_witterage(suppress?)
+	##
+	## Method to toggle witterage suppression
+	## suppress? should be a boolean indicating whether to suppress or not.
+	##
+	_if suppress? _is _true
 	_then
-		ace_top.checkpoint(_self.ace_before_checkpoint_name)
+		output << internal_text_output_stream.new()
+	_else
+		output << !output!
 	_endif
-	dataset_manager.close()
-	dataset_pred << predicate.eq(:session, parent_soc.name.write_string) _and predicate.eq(:partition, dataset_manager.name.write_string)
-	dataset_rec << ace_top.collections[:sw_gis!dataset].select(dataset_pred).an_element()
-	ace_top.switch(:write)
-	dataset_rec.delete()
-	dataset_manager.remove_connect_spec()
-	vmsql_dsm << vmsql_manager.new(dataset_manager.name)
-	vmsql_dsm.parent_soc << parent_soc
-	vmsql_dsm.store_connect_spec(vmsql_manager.default_connect_specification)
-	gis_program_manager.add_dataset(parent_soc.name, dataset_manager.name, :vmsql_manager)
-	parent_soc.dataset_managers[dataset_manager.name] << vmsql_dsm
-	.replaced_dataset_managers[dataset_manager.name] << dataset_manager
-	ace_top.commit()
-	ace_top.switch(:readonly)
-	_return vmsql_dsm
+	>> output
 _endmethod
 $
 
