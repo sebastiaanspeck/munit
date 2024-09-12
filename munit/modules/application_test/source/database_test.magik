@@ -39,7 +39,7 @@ database_test.define_shared_variable(:database_path,
         ##
         ## The location of the cambridge_db to use.
         ##
-        "su_file::../../../cambridge_db/cambridge_db/ds/ds_admin", :public)
+        "cbgsun11:/swdev/databases/dev_ds_500/ds/ds_admin", :public)
 $
 
 
