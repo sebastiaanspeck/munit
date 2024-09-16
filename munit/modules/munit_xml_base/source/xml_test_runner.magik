@@ -202,7 +202,7 @@ _pragma(classify_level=basic,topic=MUnit)
 _method xml_test_runner.run( a_test )
 	## Run test.
 	##
-	
+	write("+|+|+ ",a_test)
 	_self.int!run( a_test )
 	
 _endmethod

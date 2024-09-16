@@ -115,9 +115,11 @@ _private _method vmsql_database_test_helper.prep_vmsql_db()
 		_return
 	_endif
 
+	a_soc << gis_program_manager.spatial_object_controller(_self.vmsql_soc_name)
 	_for vmsql_dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 	_loop
-		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset 
+		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset _andif
+		     _not a_soc.is_dataset_defined?(vmsql_dataset_name)
 		_then
 			_self.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 		_endif
