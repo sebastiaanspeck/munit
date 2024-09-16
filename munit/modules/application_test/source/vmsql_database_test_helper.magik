@@ -117,7 +117,8 @@ _private _method vmsql_database_test_helper.prep_vmsql_db()
 
 	_for vmsql_dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 	_loop
-		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset 
+		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset  _andif
+		    _not a_soc.is_dataset_defined?(vmsql_dataset_name)
 		_then
 			_self.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 		_endif
@@ -369,32 +370,3 @@ _private _method vmsql_database_test_helper.dataset_manager(name)
 _endmethod
 $
 
-_method vmsql_database_test_helper.suppress_witterage(suppress?)
-	##
-	## Method to toggle witterage suppression
-	## suppress? should be a boolean indicating whether to suppress or not.
-	##
-	_if suppress? _is _true
-	_then
-		output << internal_text_output_stream.new()
-	_else
-		output << !output!
-	_endif
-	>> output
-_endmethod
-$
-
-_method vmsql_database_test_helper.suppress_witterage(suppress?)
-	##
-	## Method to toggle witterage suppression
-	## suppress? should be a boolean indicating whether to suppress or not.
-	##
-	_if suppress? _is _true
-	_then
-		output << internal_text_output_stream.new()
-	_else
-		output << !output!
-	_endif
-	>> output
-_endmethod
-$
