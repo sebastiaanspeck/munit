@@ -384,7 +384,6 @@ _private _method database_test.check_correct_database_open()
         ## path is incorrect) then closes that and opens the correct
         ## one.
         ##
-	write("+++ database_test.check_correct_database_open() +++".uppercase)
 	_self.database_opened? << _false
 	
 	_if _not ds_environment.c_is_initialised? _orif

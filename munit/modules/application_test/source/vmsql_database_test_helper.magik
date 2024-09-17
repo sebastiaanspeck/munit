@@ -79,10 +79,8 @@ _method vmsql_database_test_helper.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 
 	_if _self.vmsql_dataset_can_be_opened?(vmsql_dataset_name)
 	_then
-		write(">>>vmsql_dataset_can_be_opened")
 		vmsql_dsm.open(cspec)
 	_else
-		write(">>>import_vmsql_dataset")
 		_self.import_vmsql_dataset(vmsql_dsm)
 	_endif
 
@@ -117,14 +115,12 @@ _private _method vmsql_database_test_helper.prep_vmsql_db()
 		_return
 	_endif
 
-	write("+++ vmsql_database_test_helper.prep_vmsql_db() +++".uppercase)
 	a_soc << gis_program_manager.spatial_object_controller(_self.vmsql_soc_name)
 	_for vmsql_dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 	_loop
 		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset  _andif
 		    _not a_soc.is_dataset_defined?(vmsql_dataset_name)
 		_then
-			write(">>> add to soc ",vmsql_dataset_name)
 			_self.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 		_endif
 	_endloop
@@ -156,8 +152,6 @@ _private _method vmsql_database_test_helper.vmsql_dataset_can_be_opened?(dataset
 		_endprotect
 	_when error
 		# Fails to open
-		write(">>>>> tried to access the database and failed: "+dataset_name)
-		write(cond)
 	_endtry
 	_return can_open?
 _endmethod
@@ -235,8 +229,6 @@ _private _method vmsql_database_test_helper.import_vmsql_dump(dataset_name, _opt
 	##
 	file << dump_file.default(_self.vmsql_dump_file_name[dataset_name])
 
-	write("++++++ import_vmsql_dump ++++")
-	write(file)
 	_if _self.is_psql_available?
 	_then
 		_try _with cond
@@ -267,7 +259,6 @@ _private _method vmsql_database_test_helper.is_psql_available?
 		# Leave available? set to false
 	_endtry
 
-	write("+++++ is_psql_available ++++ ",available?)
 	_return available?
 _endmethod
 $
@@ -279,7 +270,6 @@ _private _method vmsql_database_test_helper.import_vmsql_dump_via_psql(dataset_n
 	## database_tests locally on their Windows machines.
 	##
 
-	write("+++++++ import_vmsql_dump_via_psql +++++++")
 	_self.recreate_vmsql_database(dataset_name)
 	cmd << "cmd /c psql"
 	host << system.getenv("SW_PGHOST")
@@ -324,7 +314,6 @@ _private _method vmsql_database_test_helper.import_vmsql_dump_via_ant(dataset_na
 	## Imports a a dump file named camdb_DATASET_NAME.dump using the
 	## import-vmsql-dump ant target.
 	##
-	write("++++ import_vmsql_dump_via_ant ++++")
 	_self.recreate_vmsql_database(dataset_name)
 	pghost << system.getenv("SW_PGHOST")
 	pgdb << dataset_name.write_string
