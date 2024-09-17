@@ -228,7 +228,7 @@ _private _method vmsql_database_test_helper.import_vmsql_dump(dataset_name, _opt
 	## otherwise we use an ant target.
 	##
 	file << dump_file.default(_self.vmsql_dump_file_name[dataset_name])
-
+	
 	_if _self.is_psql_available?
 	_then
 		_try _with cond
@@ -258,7 +258,6 @@ _private _method vmsql_database_test_helper.is_psql_available?
 	_when error
 		# Leave available? set to false
 	_endtry
-
 	_return available?
 _endmethod
 $
@@ -269,7 +268,6 @@ _private _method vmsql_database_test_helper.import_vmsql_dump_via_psql(dataset_n
 	## for the specified dataset.  Intended to support developers in running
 	## database_tests locally on their Windows machines.
 	##
-
 	_self.recreate_vmsql_database(dataset_name)
 	cmd << "cmd /c psql"
 	host << system.getenv("SW_PGHOST")
