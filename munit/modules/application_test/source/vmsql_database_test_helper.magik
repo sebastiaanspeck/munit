@@ -68,7 +68,9 @@ _method vmsql_database_test_helper.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 	vmsql_dsm << vmsql_manager.new(vmsql_dataset_name)
 	ace_top << gis_program_manager.ace_top_view
 	ace_top.switch(:write)
-	vmsql_dsm.store_connect_spec(vmsql_manager.default_connect_specification)
+	conn_specs << vmsql_manager.default_connect_specification
+	conn_specs[:ds][:view].remove_key(:param_processors)
+	vmsql_dsm.store_connect_spec(conn_specs)
 
 	cspec << vmsql_dsm.get_connect_spec()
 	
