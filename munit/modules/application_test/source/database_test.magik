@@ -504,6 +504,8 @@ _private _method database_test.system64?
 	view?<< _false 
 	_for view _over gis_program_manager.databases.fast_elements()
 	_loop
+		# skip sw_abstracted_dataset(cam_db_abstracted_som)
+		_if _not view.responds_to?(:system64?) _then _continue _endif 
 		view?<< _true 
 		_if _self.system64?(view)
 		_then _return _true
