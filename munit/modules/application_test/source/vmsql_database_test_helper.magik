@@ -68,7 +68,9 @@ _method vmsql_database_test_helper.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 	vmsql_dsm << vmsql_manager.new(vmsql_dataset_name)
 	ace_top << gis_program_manager.ace_top_view
 	ace_top.switch(:write)
-	vmsql_dsm.store_connect_spec(vmsql_manager.default_connect_specification)
+	conn_specs << vmsql_manager.default_connect_specification
+	conn_specs[:ds][:view].remove_key(:param_processors)
+	vmsql_dsm.store_connect_spec(conn_specs)
 
 	cspec << vmsql_dsm.get_connect_spec()
 	
@@ -118,8 +120,8 @@ _private _method vmsql_database_test_helper.prep_vmsql_db()
 	a_soc << gis_program_manager.spatial_object_controller(_self.vmsql_soc_name)
 	_for vmsql_dataset_name _over _self.vmds_vmsql_dataset_map.elements()
 	_loop
-		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset  _andif
-		    _not a_soc.is_dataset_defined?(vmsql_dataset_name)
+		_if gis_program_manager.cached_dataset(vmsql_dataset_name) _is _unset _andif
+		     _not a_soc.is_dataset_defined?(vmsql_dataset_name)
 		_then
 			_self.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 		_endif
