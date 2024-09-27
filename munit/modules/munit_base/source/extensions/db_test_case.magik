@@ -702,8 +702,7 @@ _method db_test_case.databases
 
 	# Not got started yet
 	_if ds_environment.views.empty? _orif
-	    gis_program_manager.ace_top_view _is _unset _orif
-	    gis_program_manager.ace_top_view.searchpath[1].index_of_seq("memory::") _isnt 1
+	    gis_program_manager.ace_top_view _is _unset
 	_then
 		_if gis_program_manager.ace_top_view _is _unset
 		_then
