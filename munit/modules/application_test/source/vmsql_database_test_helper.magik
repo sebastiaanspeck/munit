@@ -59,6 +59,12 @@ vmsql_database_test_helper.define_shared_variable(:vmds_vmsql_dataset_map,
 	property_list.new_with(:gis,:gis_pg,:electricity,:electricity_pg), :private)
 $
 
+_pragma(classify_level=advanced, usage={subclassable})
+vmsql_database_test_helper.define_shared_variable(:abs_vmds_abs_vmsql_dataset_map,
+	## to map abstract vmds datasets to vmsql "version" of those datasets
+	property_list.new_with(:cam_db_abstracted_som,:vmsql_cam_db_abstracted_som), :private)
+$
+
 _pragma(classify_level=basic,topic=MUnit,usage=subclassable)
 _method vmsql_database_test_helper.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 	## Add vmsql datasets to soc and import the dump if necessary
