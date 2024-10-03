@@ -126,7 +126,6 @@ _method test_suite.run(_optional a_test_result)
 
 	_for a_test _over _self.tests()
 	_loop
-		write("XXXX ",a_test)
 		_if a_test_result.should_stop?()
 		_then
 			_leave
