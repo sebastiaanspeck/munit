@@ -379,3 +379,43 @@ _private _method vmsql_database_test_helper.dataset_manager(name)
 _endmethod
 $
 
+_pragma(classify_level=debug)
+_private _method vmsql_database_test_helper.remove_vmsql_datasets(dataset_name,soc_name)
+	## 
+	##
+
+	v <<gis_program_manager.cached_dataset(dataset_name)
+
+	_if v _isnt _unset 
+	_then
+		v.rollback()
+		_for soc _over gis_program_manager.spatial_object_controllers()
+		_loop
+			_for a_soc_dsm _over soc.dataset_managers()
+			_loop
+				_if a_soc_dsm.actual_dataset _is v
+				_then
+					soc.remove_dataset_manager( a_soc_dsm.name )
+					dsm << a_soc_dsm	
+				_endif
+			_endloop
+		_endloop
+		_if dsm _isnt _unset _then dsm.close() _endif 
+	_endif 
+	
+
+	gis_program_manager.ace_top_view.switch(:write)
+	_protect
+		dataset_defs << gis_program_manager.ace_top_view.collections[:sw_gis!dataset]
+		pred << predicate.eq(:partition,dataset_name,:ci) _and predicate.eq(:session,soc_name,:ci)
+		_for a _over dataset_defs.select(pred).elements()
+		_loop
+			a.delete()
+		_endloop
+		gis_program_manager.ace_top_view.commit()
+	_protection
+		gis_program_manager.ace_top_view.switch(:readonly)
+	_endprotect
+
+_endmethod
+$
