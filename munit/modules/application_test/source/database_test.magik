@@ -340,6 +340,15 @@ _method database_test.one_time_tear_down()
 	    _self.force_close?
 	_then 
 		_self.discard_clones()
+		# make sure we remove the vmsql datasets from soc as it can
+		# impact other tests
+		_if _self.database_storage_mode _is :vmsql
+		_then
+			_for vmsql_dataset_name _over _self.vmds_vmsql_dataset_map.fast_elements()
+			_loop
+				_self.remove_vmsql_datasets(vmsql_dataset_name,_self.vmsql_soc_name)
+			_endloop
+		_endif 
 		gis_program_manager.reinitialise()
 	_endif
 _endmethod
