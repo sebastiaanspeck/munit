@@ -521,6 +521,8 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 		_for creator _over create_props[:dataset_creators].fast_elements()
 		_loop
 			name << creator.property(:name)
+			_if creator.type _is :job _then name << :job_queue _endif 
+
 			(optional_keys, mandatory_keys) << creator.property_keys(creator.type)
 			_for additional_key, additional_value _over _self.vmsql_additional_dataset_args.fast_keys_and_elements()
 			_loop
