@@ -76,21 +76,17 @@ _method vmsql_database_test_helper.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 	ace_top.switch(:write)
 	conn_specs << vmsql_manager.default_connect_specification
 
-	new_files << rope.new()
-
 	# electricity dataset does not have raster.ds file
 	_if vmsql_dataset_name=:electricity_pg
 	_then
+		new_files << rope.new()
 		_for f _over conn_specs[:ds][:files].fast_elements()
 		_loop
-			_if f[:file_name]<>"raster.ds"
-			_then
-				new_files.add_last(f)
-			_endif
+			_if f[:file_name]="raster.ds" _then _continue _endif 
+			new_files.add_last(f)
 		_endloop
 		conn_specs[:ds][:files]<< new_files
 	_endif 
-
 	
 	conn_specs[:ds][:view].remove_key(:param_processors)
 	vmsql_dsm.store_connect_spec(conn_specs)
