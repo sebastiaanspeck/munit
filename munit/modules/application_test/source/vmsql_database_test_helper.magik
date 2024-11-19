@@ -76,7 +76,11 @@ _method vmsql_database_test_helper.add_vmsql_dataset_to_soc(vmsql_dataset_name)
 	ace_top.switch(:write)
 	conn_specs << vmsql_manager.default_connect_specification
 
-	# electricity dataset does not have raster.ds file
+	# FIXME this is needed because vmsql_manager.default_connect_specification
+	# includes raster.ds file and the distributed cambridge
+	# electricity dataset doesn't have this file. 
+	# In the future the files should be removed from default_connect_specification
+	# and this part can then be  removed
 	_if vmsql_dataset_name=:electricity_pg
 	_then
 		new_files << rope.new()
