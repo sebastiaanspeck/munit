@@ -67,6 +67,7 @@ _method xml_test_runner.end_test(a_test)
 	##
 	
 	_super.end_test(a_test)
+	.testcase.name << a_test.get_name()
 	.testcase.end()
 _endmethod
 $
