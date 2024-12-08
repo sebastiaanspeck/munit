@@ -32,12 +32,14 @@ _method database_system_test_mixin.given_writable_datasets( writable_dataset_nam
 	# Create a scratchpad for each dataset to hold any changes
 	_for ds_name _over writable_dataset_names.fast_elements()
 	_loop
-		v << gis_program_manager.databases[ds_name]
+		_if (v << _self.dataset(ds_name)) _is _unset _then _continue _endif 
+		_if v.has_uncommitted_changes? _then v.rollback() _endif 
 		v.goto_top_alternative()
 		_if _not v.vmds?
 		_then
 			# Faking scratchpad for VMSQL
 			# TODO:  When VMSQL supports scratchpad then remove this.
+			
 			count << 1
 			alt_name << "scratchpad_"
 			_while v.has_alternative?(alt_name+count.write_string)
@@ -45,6 +47,7 @@ _method database_system_test_mixin.given_writable_datasets( writable_dataset_nam
 				count +<< 1
 			_endloop
 			alt_name << alt_name+count.write_string
+			
 			v.create_alternative(alt_name)
 			v.down(alt_name, :write)
 		_else
@@ -63,7 +66,16 @@ _private _method database_system_test_mixin.dataset( ds_name )
 	##
 	## Returns the dataset named DS_NAME
 	##
-
+	_if _self.responds_to?(:database_storage_mode,_true) _andif _self.database_storage_mode _is :vmsql
+	_then
+		_if (a_name<<_self.vmds_vmsql_dataset_map[ds_name]) _isnt _unset 
+		_then
+			ds_name << a_name
+		_elif (a_name<<_self.abs_vmds_abs_vmsql_dataset_map[ds_name]) _isnt _unset
+		_then 
+			ds_name << a_name
+		_endif
+	_endif
 	>> gis_program_manager.databases[ds_name]
 	
 _endmethod
@@ -78,10 +90,19 @@ _private _method database_system_test_mixin.close_datasets()
 	_for ds_name _over _self.writable_dataset_names.fast_elements()
 	_loop 
 		v << _self.dataset( ds_name )
+		_if v _is _unset _then _continue _endif 
 		v.rollback()
 		_if (v.alternative_path.size > 0)
 		_then
-			v.up()
+			_if _not v.vmds?
+			_then
+				# TODO:  When VMSQL supports scratchpad then remove this.			
+				alt_name << v.alternative_path.last
+				v.up()
+				v.remove_alternative(alt_name)
+			_else
+				v.up()	
+			_endif 
 		_endif
 	_endloop	
 _endmethod

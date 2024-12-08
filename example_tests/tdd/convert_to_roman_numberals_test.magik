@@ -1,0 +1,121 @@
+#% text_encoding = iso8859_1
+##
+_package user
+
+_pragma(classify_level=debug)
+def_slotted_exemplar(:convert_to_roman_numerals_test,
+  {
+    {:properties, _unset}
+	},
+  {:test_case})
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.set_up()
+	##
+	##
+	
+	.properties << concurrent_hash_map.new_with(:converter, convert_to_roman_numerals.new())
+	>> _super.set_up()
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.test_convert_to_roman_numeral()
+	##
+	## Refactored test method using a concurrent_hash_map to test multiple inputs
+	## and expected outputs concurrently. 
+	##
+	
+	test_cases << concurrent_hash_map.new_with(
+		0, "Invalid input",
+		-1, "Invalid input",
+		"test", "Invalid input",
+		1.5, "Invalid input",
+		1, "I",
+		2, "II",
+		4, "IV",
+		5, "V",
+		6, "VI",
+		8, "VIII",
+		9, "IX",
+		10, "X",
+		11, "XI",
+		14, "XIV",
+		15, "XV",
+		16, "XVI",
+		19, "XIX",
+		20, "XX",
+		40, "XL",
+		45, "XLV",
+		49, "XLIX",
+		50, "L",
+		51, "LI",
+		69, "LXIX",
+		90, "XC",
+		95, "XCV",
+		99, "XCIX",
+		105, "CV",
+		164, "CLXIV",
+		400, "CD",
+		900, "CM",
+		999, "CMXCIX",
+		3999, "MMMCMXCIX",
+		4000, "Invalid input")
+
+	_for input, expected_value _over test_cases.fast_keys_and_elements()
+	_loop 
+		_self.given_a_number(input).
+			when_converting_to_roman_numeral().
+			then_result_is(expected_value)
+	_endloop
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.given_a_number(number)
+	##
+	##
+	
+	.properties[:number] << number
+	>> _self 
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.when_converting_to_roman_numeral()
+	##
+	##
+	
+	_try _with error_variable
+		.properties[:result] << .properties[:converter].convert_to_roman_numerals(.properties[:number])
+	_when user_error
+		.properties[:result] << error_variable
+	_endtry 
+
+	>> _self 
+	
+_endmethod
+$
+
+_pragma(classify_level=debug)
+_method convert_to_roman_numerals_test.then_result_is(expected)
+	##
+	##
+	
+	result << .properties[:result]
+	_if result.class_name _is :condition
+	_then 
+		result << result.data[2]
+	_endif 
+	
+	fail_str << write_string("Expected the result to be ", expected, ", but it is ", result)
+	_self.assert_equals(expected, result, fail_str)
+
+	>> _self 
+	
+_endmethod
+$

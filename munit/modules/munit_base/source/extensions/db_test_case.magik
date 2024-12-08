@@ -20,7 +20,7 @@ _pragma(classify_level=advanced, usage={subclassable})
 db_test_case.define_shared_constant(:vmsql_additional_dataset_args, 
 	property_list.new_with(
 		:concurrency_mode, :vmsql, 
-		:partition_files, property_list.new_with(:dd, "dd.ds", :rwo, "gdb.ds", :gdb, "gdb.ds", :raster, "raster.ds", :dd_extension, "dd_extension.ds")),
+		:partition_files, property_list.new_with(:dd, "dd.ds", :gdb, "gdb.ds", :rwo,"rwo.ds", :raster, "raster.ds", :dd_extension, "dd_extension.ds")),
 	:private)
 $
 
@@ -148,7 +148,7 @@ $
 _pragma(classify_level=debug)
 _private _method db_test_case.tear_down_database()
 	## 
-	## 
+	##
 	_if .ds_views _isnt _unset
 	_then
 		_for v _over .ds_views.fast_elements()
@@ -249,24 +249,20 @@ _method db_test_case.run_bare()
 	# setup_db() and teardown_db() this should be called in
 	# set_up(), tear_down() but this would require big refactoring
 	# (mainly in PNI tests)
-	_dynamic !msf_debug?!
-	_if _self.class_name.write_string.matches?("vmsql*")
-	_then
-		!msf_debug?! << _true
-	_endif
 	_self.stub_map_rendering_if_required()
-	_self.one_time_behaviour()
 
-	ignored? << _self.ignore_test(_self.get_name())
+	ignored? << _self.ignore_test(_self.name)
 	_protect
 		_if _not ignored?
 		_then
+			_self.one_time_behaviour()
 			_self.setup_db() 
 			_self.set_up()
 		_endif
 	
 		_self.run_test()
 	_protection
+		_self.set_full_name()
 		_if _not ignored?
 		_then
 			_self.tear_down()
@@ -525,6 +521,8 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 		_for creator _over create_props[:dataset_creators].fast_elements()
 		_loop
 			name << creator.property(:name)
+			_if creator.type _is :job _then name << :job_queue _endif 
+
 			(optional_keys, mandatory_keys) << creator.property_keys(creator.type)
 			_for additional_key, additional_value _over _self.vmsql_additional_dataset_args.fast_keys_and_elements()
 			_loop
@@ -711,7 +709,7 @@ _method db_test_case.databases
 		_if gis_program_manager.ace_top_view _is _unset
 		_then
 			gis_program_manager.reinitialise()
-		_endif 
+		_endif
 		_return views
 	_endif
 
@@ -754,3 +752,43 @@ _private _method db_test_case.check_for_in_memory_database()
 		condition.raise(:munit_db_not_in_memory)
 	_endif
 _endmethod
+$
+_pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
+_private _method db_test_case.system64?
+	## returns _maybe if there is not any database view,
+	##         _true there is at least one 64bit view
+	##         _false they are all 32bit
+	##
+
+	# unfortunatelly the implementation is crap because 
+	# there is a slot and then a method which can be overridden
+	# so we have two sources of views
+	>> _if (result<< _self.views64?(_self.ds_views)) _is _maybe
+	   _then  >> _self.views64?(.ds_views)
+	   _else  >> result 
+	   _endif 
+_endmethod
+$
+_pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
+_private _method db_test_case.views64?(views)
+	## we don't know what view tests uses
+	## we return true if any of the views we encounter is system64
+	##
+	view?<< _false
+	_for ds_view _over views.fast_elements()
+	_loop
+		_if ds_view _isnt _unset
+		_then
+			view?<< _true 
+			_if _self.system64?(ds_view)
+			_then
+				_return _true
+			_endif 
+		_endif 
+	_endloop
+	>> _if view?
+	   _then >> _false
+	   _else >> _maybe
+	   _endif 
+_endmethod
+$
