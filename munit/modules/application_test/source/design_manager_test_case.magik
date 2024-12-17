@@ -356,6 +356,7 @@ _method design_manager_test_case.run_bare()
 		_self.setup_sub_design()
                 _self.run_test()
         _protection
+		_self.set_full_name()
                 _self.teardown_design()
 		_self.tear_down()
 		!notify_database_data_changes?! << old_value 
@@ -1623,5 +1624,25 @@ _method design_manager_test_case.note_change( who, what, data )
 	
 	_super( design_manager_system_test_mixin ).note_change( who, what, data )
 	
+_endmethod
+$
+_pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
+_private _method design_manager_test_case.system64?
+	## returns _maybe if there is not any database view,
+	##         _true there is at least one 64bit view
+	##         _false they are all 32bit
+	##
+	view?<< _false 
+	_for view _over _self.ds_views.fast_elements()
+	_loop
+		view?<< _true 
+		_if _self.system64?(view)
+		_then _return _true
+		_endif
+	_endloop
+	>> _if view?
+	   _then >> _false
+	   _else >> _maybe
+	   _endif
 _endmethod
 $
