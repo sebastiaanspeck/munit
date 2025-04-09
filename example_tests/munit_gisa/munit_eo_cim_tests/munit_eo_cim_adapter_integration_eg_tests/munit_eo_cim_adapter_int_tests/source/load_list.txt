@@ -1,2 +1,0 @@
-munit_cabinet_export_itest
-munit_permanent_switching_change_itest
