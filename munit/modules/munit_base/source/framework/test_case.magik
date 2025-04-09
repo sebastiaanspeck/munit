@@ -52,7 +52,8 @@ _pragma(classify_level=basic,topic=MUnit,usage=subclassable)
 ## a_suite.add_test( math_test.new( :test_divide_by_zero|()| ))
 def_slotted_exemplar(:test_case,
 {
-	{ :name , _unset },
+	{ :name , _unset, :readable },
+	{ :full_name, _unset },
         { :retry_count, 0 }
 },
 {:test_interface,:assert}
@@ -151,34 +152,53 @@ $
 _pragma(classify_level=basic,topic=MUnit)
 _method test_case.set_name( a_name )
 	## Sets A_NAME of a test.
-
 	.name << a_name
+	.full_name << _unset
+_endmethod
+$
+_pragma(classify_level=basic,topic=MUnit)
+_method test_case.get_name()
+	## Returns name of the test which is typically test method extended
+	## with suffix
+	## -64bit if it runs on a 64bit database
+	## -32bit if it runs on a 32bit one
+	## -ignored to reflect whether it is ignored in ignore_tests shared constant
+	>> .full_name.default(.name)
 _endmethod
 $
 
-_pragma(classify_level=basic,topic=MUnit)
-_method test_case.get_name()
-	##
-	## Gets the name of a test.
-	##
+_pragma(classify_level=debug,topic=MUnit)
+_method test_case.set_full_name()
+	## Sets .full_name see get_name() about how it is extended
+	## 
+
+	_if .full_name _isnt _unset 
+	_then _return
+	_endif
 	
-	name << .name 
-	# Assumption is that GIS dataset is in all product, 
-	# so when GIS is converted to 64bit then all other datasets
-	# are converted to GIS, so .name of the test has "-64bit" suffix added.
-	_if gis_program_manager _isnt _unset _andif 
-		(a_view << gis_program_manager.databases[:gis]) _isnt _unset _andif 
-		a_view.system64? _is _true 
-	_then 
-		name << write_string(.name.default(""), "-64bit")
-		_if .name.is_class_of?(symbol)
-		_then 
-			# .name is symbol, then new name must be symbol 
-			name << name.as_symbol()
-		_endif 
-	_endif 
-	
-	_return name 
+	.full_name<< write_string(.name.default(""), _self.name_postfix())
+_endmethod
+$
+_pragma(classify_level=debug,topic=MUnit)
+_private _method test_case.name_postfix()
+	## 
+	## 
+	# extend test name with suffix -64bit if it runs on a 64bit
+	# database and with -32bit if it runs on a 32bit one
+	system64?<< _self.system64?
+	postfix << _if system64? _is _true
+		   _then >> "-64bit"
+		   _elif system64? _is _false
+		   _then >> "-32bit"
+		   _else >> ""
+		   _endif
+	# extend test name with suffix ignored when test is 
+	# ignored via ignored_tests shared constant
+	_if _self.ignore_test(.name)
+	_then
+		postfix +<< "-ignored"
+	_endif
+	>> postfix
 _endmethod
 $
 
@@ -213,15 +233,16 @@ _pragma(classify_level=advanced,topic=MUnit)
 _method test_case.run_bare()
 	## Runs the bare test sequence.
 	
-	_self.one_time_behaviour()
-	ignored? << _self.ignore_test(_self.get_name())
+	ignored? << _self.ignore_test(.name)
 	_protect
 		_if _not ignored?
 		_then
+			_self.one_time_behaviour()
 			_self.set_up()
 		_endif
 		_self.run_test()
 	_protection
+		_self.set_full_name()
 		_if _not ignored?
 		_then
 			_self.tear_down()
@@ -231,7 +252,6 @@ _method test_case.run_bare()
 	_endprotect
 _endmethod
 $
-
 
 _pragma(classify_level=advanced,topic=MUnit, usage=subclassable)
 _method test_case.one_time_set_up()
@@ -340,30 +360,40 @@ _endmethod
 $
 
 _pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
-_private _method test_case.ignore_test(test_name)
+_private _method test_case.ignore_test()
 	##
-	## Ignores TEST_NAME if it is configured to be ignored in self.ignored_tests. 
+	## Ignores test if it is configured to be ignored in self.ignored_tests. 
 	## Stubs the test_name method with one that simply outputs a message stating
 	## that the test is being ignored.  Returns true if the test was ignored, false
 	## otherwise.  TEST_NAME should be a symbol, e.g. :|test_something()|.
 	##
 	# TODO:  Tests ignored with this techique will not be picked up as ignored in
 	# the build system.  We need to get them added.
-	_if test_name _is _unset _orif _not _self.ignored_tests.includes?(test_name)
+	_if .name _is _unset _orif _not _self.ignored_tests.includes?(.name)
 	_then
 		_return _false
 	_endif
-	
+	_self.int!ignore_test()
+	>> _true 
+_endmethod
+$
+_pragma(classify_level=restricted,topic=MUnit,usage=subclassable)
+_method test_case.int!ignore_test()
+	## 
+	## 
 	# Test is not ignored
-	method << _self.method(test_name)
-	owning_class << method.owner.meta_at(:exemplar_global).value
-	_local msg << write_string("Test case ", _self.class_name," is ignoring ",test_name, " (defined in ",owning_class.class_name,")")
-	ignore_test_proc << _proc @ignore_test()
-			_import msg
-			write(msg)
-	_endproc
-	stub_method_helper.replace_method(_self, test_name, ignore_test_proc)
-	_return _true 
+	_if (method << _self.method(.name)) _isnt _unset _andif 
+	    (v<< method.value) _isnt _unset _andif
+	    v.name _isnt :ignore_test
+	_then 
+		owning_class << method.owner.meta_at(:exemplar_global).value
+		_local msg << write_string("Test case ", _self.class_name," is ignoring ",.name, " (defined in ",owning_class.class_name,")")
+		ignore_test_proc << _proc @ignore_test()
+					    _import msg
+					    write(msg)
+				    _endproc
+		stub_method_helper.replace_method(_self, .name, ignore_test_proc)
+	_endif 	
 _endmethod
 $
 
@@ -476,6 +506,7 @@ _method test_case.tear_down()
 	_self.stubbed_alerts.empty()	
 	
 	stub_method_helper.restore_stubbed_methods()
+	stub_proc_helper.restore_stubbed_procedures()
 	
 _endmethod
 $
@@ -516,7 +547,7 @@ _method test_case.write_on( a_stream )
 	_then
 		_super.write_on( a_stream )
 	_else 
-		.name.write_on( a_stream )
+		_self.get_name().write_on( a_stream )
 
 		" [".write_on( a_stream )
 		
@@ -872,5 +903,29 @@ _private _method test_case.recreate_vmsql_database(database_name)
 		_endlock 
 	_endprotect
 	
+_endmethod
+$
+_pragma(classify_level=debug, topic={MUnit},usage=subclassable)
+_private _method test_case.system64?
+	## returns _maybe if there is not any database view,
+	##         _true there is at least one 64bit view
+	##         _false they are all 32bit	
+	## subclass implementation can call _self.system64?(view) 
+	>> _maybe
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_private _method test_case.system64?(view)
+	## 
+	## 
+	_try _with cond
+		_if view.system64?
+		_then _return _true
+		_endif
+	_when error 
+		write("Condition ", cond, " raised when running system64? on a dataset ", view)
+	_endtry
+	>> _false 
 _endmethod
 $

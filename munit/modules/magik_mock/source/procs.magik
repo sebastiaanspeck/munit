@@ -39,6 +39,14 @@ _endproc
 $
 
 _pragma(classify_level=debug)
+## calls stub_proc_helper.replace_procedure(). See details in there.
+_global replace_proc<<
+_proc@replace_proc(proc_name, a_proc)
+	>> stub_proc_helper.replace_procedure(proc_name, a_proc)
+_endproc
+$
+
+_pragma(classify_level=debug)
 ## creates a METHOD_PROC which will return RETURN_VALUES and
 ## calls stub_method_helper.replace_method(). See details in there.
 _global replace_method_returning<< 

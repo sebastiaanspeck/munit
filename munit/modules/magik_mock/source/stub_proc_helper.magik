@@ -1,0 +1,110 @@
+#% text_encoding = iso8859_1
+_package sw
+
+condition.define_condition(:invalid_procedure, :error, {:proc_name}, "invalid namespace/procedure definition: #1")
+condition.define_condition(:invalid_restore, :error, {:proc_name}, "procedure: #1 has not been stubbed")
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+def_slotted_exemplar(:stub_proc_helper,
+	##
+	## Utility class for temporarily stubbing out magik procedures
+	## during unit testing.
+	##
+	{})
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+stub_proc_helper.define_shared_constant(:replaced_proc_data, equality_property_list.new(), :public)
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper.replace_procedure(proc_name, a_proc)
+	##
+	## Replace procedure with A_PROC
+	## PROC_NAME can be one of :test, sw:test, "sw:test" etc
+	##
+	_lock _self
+		(pkg, name) << _self.get_package_and_proc_name(proc_name)
+		proc_key << _self.get_proc_key(pkg, name)
+		_if _not _self.replaced_proc_data.includes_key?(proc_key)
+		_then
+			## only store the first definition
+			## anything that's been replaced after will not be stored
+			original_proc << pkg[name]
+			_self.replaced_proc_data[proc_key] << original_proc
+		_endif
+		pkg[name] << a_proc
+	_endlock
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper.restore_stubbed_procedure(proc_name)
+	##
+	## Restore the original implementation of procedure
+	##
+	_lock _self
+		(pkg, name) << _self.get_package_and_proc_name(proc_name)
+		proc_key << _self.get_proc_key(pkg, name)
+		_if _not _self.replaced_proc_data.includes_key?(proc_key)
+		_then
+			condition.raise(:invalid_restore, :proc_name, proc_name)
+		_endif
+		original_proc << _self.replaced_proc_data[proc_key]
+		_self.replaced_proc_data.remove_key(proc_key)
+		pkg[name] << original_proc
+	_endlock
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_method stub_proc_helper.restore_stubbed_procedures()
+	##
+	## Restores all stubbed procedures to their origianl states.
+	##
+	_lock _self
+		_for proc_key, original_proc _over _self.replaced_proc_data.keys_and_elements()
+		_loop
+			(pkg, name) << _self.get_package_and_proc_name(proc_key)
+			pkg[name] << original_proc
+			_self.replaced_proc_data.remove_key(proc_key)
+		_endloop
+	_endlock
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_private _method stub_proc_helper.get_proc_key(a_pkg, a_name)
+	##
+	## Generate a key symbol with format: "{PACKAGE_NAME}:{PROCEDURE_NAME}"
+	##
+	result << a_pkg.name + ":" + a_name
+	_return result.as_symbol()
+_endmethod
+$
+
+_pragma(classify_level=debug, topic={MUnit})
+_private _method stub_proc_helper.get_package_and_proc_name(proc_name)
+	##
+	## Get procedure's package and name
+	##
+	_local pkg, name
+	
+	_if (index << proc_name.index_of(%:)) _isnt _unset
+	_then
+		proc_string << proc_name.write_string
+		pkg << package(proc_string.slice(1, index - 1).as_symbol())
+		name << proc_string.slice_to_end(index + 1).as_symbol()
+	_else
+		name << proc_name.as_symbol()
+	_endif
+	_if pkg _is _unset _then pkg << !current_package! _endif
+	
+	_if _not pkg.includes_key?(name)
+	_then 
+		condition.raise(:invalid_procedure, :proc_name, proc_name) 
+	_endif
+	_return pkg, name
+_endmethod
+$

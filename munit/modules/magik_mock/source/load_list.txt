@@ -5,3 +5,4 @@ mmock_object
 mmock_stub
 procs
 stub_method_helper
+stub_proc_helper
