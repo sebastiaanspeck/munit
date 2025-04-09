@@ -1,9 +1,0 @@
-munit_eo_dnom_model_test_utils	1
-
-description
-	Provides DNOM data model utility classes
-end
-
-requires
-
-end

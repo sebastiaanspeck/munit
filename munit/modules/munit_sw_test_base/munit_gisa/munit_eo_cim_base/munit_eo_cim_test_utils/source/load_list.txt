@@ -1,8 +1,0 @@
-sw_cim_gml_file_comparer
-eo_cim_test_helper
-eo_cim_base_case
-eo_cim_test_case
-eo_cim_qm_test_case
-exchanged_model_information
-sw_cim_rdf_file_reader
-sw_cim_rdf_file_comparer
