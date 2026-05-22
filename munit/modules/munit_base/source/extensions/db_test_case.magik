@@ -10,10 +10,6 @@ def_slotted_exemplar(:db_test_case,
 {:test_case})
 $
 
-_pragma(classify_level=advanced, usage={subclassable})
-## Can be set to :vmsql in order to create datasets in Postgres.
-db_test_case.define_shared_variable(:database_storage_mode, :vmds, :private)
-$
 
 _pragma(classify_level=advanced, usage={subclassable})
 ## Additional dataset arguments for VMSQL.
@@ -48,6 +44,9 @@ _pragma(classify_level=restricted, usage={subclassable})
 ## The default is a :geometric dataset called :gis which will
 ## end up in the memory::/ds/ds_gis directory.
 db_test_case.define_shared_constant(:default_create_dataset_args, {{:type, :geometric, :name, :gis}}, :private)
+$
+
+db_test_case.define_shared_constant(:gis_dataset_name_for_vmsql, :gis_vmsql, :private)
 $
 
 _pragma(classify_level=advanced, usage={subclassable})
@@ -87,7 +86,15 @@ _method db_test_case.ds_views
 	_loop
 		_if ds_view _isnt _unset _andif ds_view.version_managed?
 		_then
-			ds_views[view_name]<< ds_view
+			vname << view_name
+
+			_if _self.database_storage_mode=:vmsql
+			_then
+				_if vname=_self.gis_dataset_name_for_vmsql  _then vname<<:gis _endif 
+				_if vname=(_self.gis_dataset_name_for_vmsql+:_case) _then vname<<:gis_case _endif 
+			_endif
+			
+			ds_views[vname]<< ds_view
 		_endif 
 	_endloop 
 	>> ds_views
@@ -485,7 +492,7 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 	_if (dataset_args << create_dataset_args) _is _unset _andif 
 	    _not create_database_args.default({}).includes?(:dataset_creators)
 	_then
-		dataset_args << _self.default_create_dataset_args
+		dataset_args << _self.default_create_dataset_args	
 	_endif 
 
 	# Work out where the database is to be created
@@ -536,6 +543,13 @@ _method db_test_case.create_database(_optional create_dataset_args, create_datab
 			_then
 				creator.set_property(:searchpath, write_string("/", name))
 			_endif
+
+			_if name=:gis
+			_then
+				name << _self.gis_dataset_name_for_vmsql
+				creator.set_property(:name,name)
+			_endif
+
 			# Recreate the database
 			_self.recreate_vmsql_database(name)
 		_endloop
@@ -793,3 +807,4 @@ _private _method db_test_case.views64?(views)
 	   _endif 
 _endmethod
 $
+

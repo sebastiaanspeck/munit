@@ -2,7 +2,6 @@ database_system_test_mixin
 gui_framework_test_mixin
 application_system_test_mixin
 design_manager_system_test_mixin
-vmsql_database_test_helper
 database_test
 application_test
 design_manager_test_case

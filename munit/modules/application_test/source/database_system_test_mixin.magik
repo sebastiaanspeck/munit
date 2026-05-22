@@ -66,16 +66,6 @@ _private _method database_system_test_mixin.dataset( ds_name )
 	##
 	## Returns the dataset named DS_NAME
 	##
-	_if _self.responds_to?(:database_storage_mode,_true) _andif _self.database_storage_mode _is :vmsql
-	_then
-		_if (a_name<<_self.vmds_vmsql_dataset_map[ds_name]) _isnt _unset 
-		_then
-			ds_name << a_name
-		_elif (a_name<<_self.abs_vmds_abs_vmsql_dataset_map[ds_name]) _isnt _unset
-		_then 
-			ds_name << a_name
-		_endif
-	_endif
 	>> gis_program_manager.databases[ds_name]
 	
 _endmethod
